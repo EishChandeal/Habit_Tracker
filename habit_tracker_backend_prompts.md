@@ -69,6 +69,7 @@ in full so I can verify it.
 ### What to verify
 
 **Check pubspec.yaml**
+
 - Open pubspec.yaml and read every dependency line yourself.
   Confirm no package was added that you didn't ask for.
 - Confirm dev_dependencies are in the right section —
@@ -77,17 +78,20 @@ in full so I can verify it.
   bloats your release build.
 
 **Check folder structure**
+
 - Run `find lib/ -type f` in your terminal.
   You should see one .gitkeep per folder and nothing else.
 - Confirm tool/ exists at the project root.
 
 **Run flutter pub get**
+
 - Run `flutter pub get` in terminal.
   It must complete with no errors.
   If you see version conflict errors, note the conflicting
   packages and ask the agent to resolve them specifically.
 
 **Understand before moving on**
+
 - Read the pubspec.yaml and know what each package does.
   If any package is unclear to you, ask the agent:
   "explain what [package name] does and why we need it
@@ -135,12 +139,14 @@ Do not create any other files. Do not run build_runner.
 ### What to verify
 
 **Read every file yourself**
+
 - Open each enum file. Confirm the fromString() method
   throws ArgumentError (not just returns null) for
   an unrecognized value. This matters later when
   deserializing corrupt or old data from ObjectBox.
 
 **Manually trace the logic**
+
 - For each enum, mentally call fromString() with:
   - A valid value (e.g. 'boolean') — should return the enum
   - An invalid value (e.g. 'xyz') — should throw
@@ -150,10 +156,12 @@ Do not create any other files. Do not run build_runner.
     bite you during JSON import later.
 
 **Check the barrel file**
+
 - Open enums.dart. It should have exactly three export lines.
   Nothing else.
 
 **Write this yourself after**
+
 - This is a good first exercise. Close all the files,
   create a new file called practice_enums.dart in a scratch
   folder, and write FrequencyType from memory without
@@ -226,12 +234,41 @@ no code generation:
 
 Create lib/data/models/dtos/dtos.dart as a barrel export.
 
+In lib/data/models/dtos/, create a new file habit_schedule_dto.dart
+with class HabitScheduleDto. This follows the exact same pattern
+as HabitLimitDto — a versioned history record, not a flat field.
+
+Fields (all final):
+  String id
+  String habitId
+  ScheduleType scheduleType
+  List<Weekday>? scheduledWeekdays   (only used when scheduleType is specificWeekdays)
+  int? targetCount                   (only used when timesPerWeek or timesPerMonth)
+  DateTime effectiveFrom
+  DateTime? effectiveTo              (null means this is the currently active schedule)
+
+Include the same required methods as the other DTOs:
+const constructor, copyWith() (sentinel pattern for nullable
+fields), toJson(), fromJson(), == operator, hashCode, toString().
+
+Remove scheduleType, scheduledWeekdays, and targetCount from
+HabitDto entirely — Habit no longer carries a current schedule
+directly. Instead HabitDto keeps only its identity fields
+(name, type, unit, targetValue, colorHex, iconName, createdAt,
+isArchived). The schedule lives entirely in HabitScheduleDto
+history, exactly the way limits already work.
+
+Update lib/data/models/dtos/dtos.dart to export the new file.
+
+Show me the full updated HabitDto and the new HabitScheduleDto file.
+
 No other files. No build_runner.
 ```
 
 ### What to verify
 
 **Check every field for nullability consistency**
+
 - Open each DTO. For every nullable field, confirm
   the copyWith() parameter is also nullable and uses
   a sentinel pattern correctly. The common mistake is:
@@ -252,6 +289,7 @@ No other files. No build_runner.
   for all nullable fields using this sentinel pattern.
 
 **Trace toJson/fromJson manually**
+
 - Pick HabitDto. On paper, write what toJson() would
   produce for a sample instance. Then trace fromJson()
   reading that map back in. Confirm you get the same
@@ -259,6 +297,7 @@ No other files. No build_runner.
   for serialization bugs.
 
 **Check == and hashCode**
+
 - Confirm == checks every field, not just id.
   hashCode should use Object.hash() or Object.hashAll()
   covering every field. If it only hashes id, that is
@@ -266,6 +305,7 @@ No other files. No build_runner.
   different values would be "equal".
 
 **Check barrel file**
+
 - dtos.dart should export exactly three files.
 
 ---
@@ -347,6 +387,7 @@ Report any build errors exactly as they appear.
 ### What to verify
 
 **Confirm generated files exist**
+
 - Check that `lib/objectbox.g.dart` exists.
 - Check that `objectbox-model.json` exists at project root.
 - If either is missing, build_runner failed silently.
@@ -354,6 +395,7 @@ Report any build errors exactly as they appear.
   and share the full output with the agent.
 
 **Read fromDto/toDto for each entity**
+
 - For each entity, trace fromDto() and toDto() on paper
   with a sample object. The round trip must be lossless:
   `entity.toDto()` called on `HabitEntity.fromDto(dto)`
@@ -362,15 +404,18 @@ Report any build errors exactly as they appear.
   and back must preserve the exact millisecond.
 
 **Check nullable int for effectiveTo**
+
 - Open HabitLimitEntity. The effectiveTo field
   must be `int?` not `int`. A non-nullable int cannot
   represent "null means currently active".
 
 **Check ToOne/ToMany imports**
+
 - Confirm the entity files import objectbox correctly
   and that ToOne<T>/ToMany<T> reference the right types.
 
 **Try to understand build_runner**
+
 - Open objectbox.g.dart. Don't read the whole thing —
   just look at the first 50 lines. Understand that this
   file is auto-generated and you should never edit it.
@@ -515,6 +560,7 @@ Do not run build_runner. Do not add any UI code.
 ### What to verify
 
 **Read upsertEntry carefully**
+
 - This is the trickiest method. Trace through both branches:
   when an entry already exists for that date, and when
   it doesn't. Confirm the date normalization happens
@@ -522,23 +568,27 @@ Do not run build_runner. Do not add any UI code.
   entries per day, which silently corrupts streak data.
 
 **Check the null query workaround in getActiveLimitForHabit**
+
 - Confirm the agent did NOT try to query ObjectBox for
   null int (it won't work). It must fetch all limits for
   the habit and filter `.where((l) => l.effectiveTo == null)`
   in Dart. This is correct and the only safe approach.
 
 **Check that no entity types leak out of repositories**
+
 - Every public method return type should be a DTO or Stream
   of DTOs. If you see HabitEntity in any public signature,
   ask the agent to fix it.
 
 **Check the stream mapping**
+
 - In watchAllHabits() and watchEntriesForHabit(), confirm
   the stream maps entity lists to DTO lists using .toDto().
   A stream that emits raw entities will cause type errors
   the moment a provider tries to use it.
 
 **Check the barrel file**
+
 - repositories.dart exports exactly three files.
 
 ---
@@ -630,6 +680,7 @@ Create lib/domain/services/services.dart as a barrel export.
 ### What to verify
 
 **Test StreakEngine logic on paper first**
+
 - Before running any code, manually trace through
   this scenario: entries exist for day 1, day 2,
   (gap on day 3), day 4, day 5, today.
@@ -639,6 +690,7 @@ Create lib/domain/services/services.dart as a barrel export.
   running it. This is how you develop debugging intuition.
 
 **Check timezone handling specifically**
+
 - The most common bug in streak logic is mixing local
   DateTime with UTC DateTime. Confirm every date
   comparison in StreakEngine uses DateTime.utc()
@@ -647,6 +699,7 @@ Create lib/domain/services/services.dart as a barrel export.
   it as the next UTC day without this normalization.
 
 **Check the "today has no entry" case**
+
 - Trace the code for a case where today has no entry
   but yesterday was completed. The streak should NOT
   break — a user opening the app in the morning
@@ -654,12 +707,14 @@ Create lib/domain/services/services.dart as a barrel export.
   their streak intact.
 
 **Check weeklyAverages grouping**
+
 - Trace two entries from different weeks.
   Confirm they produce two separate keys in the map.
   Trace two entries from the same week.
   Confirm they average together under one key.
 
 **Think about what's missing**
+
 - Notice that StreakEngine currently ignores the limit.
   A habit with a target of 10000 steps where the user
   logged 5000 steps gets DayStatus.met even though
@@ -736,12 +791,14 @@ the real output matches.
 ### What to verify
 
 **Run it and compare to expected output**
+
 - The agent should have shown you expected output.
   Run `dart run tool/dev_runner.dart` and compare
   every number. Any mismatch is a bug in either
   the runner data setup or your service logic.
 
 **Check the limit history**
+
 - After running, temporarily add a line to the runner
   that calls getLimitHistoryForHabit() and prints both
   limits. Confirm there are exactly two limits,
@@ -750,16 +807,19 @@ the real output matches.
   sequential logic works.
 
 **Check the heatmap grid**
+
 - The text grid output should show exactly 3 missed days
   (□) in the last 14 days if days 8 and 15 fall within
   that window. Count the squares and verify manually.
 
 **Check for any Dart errors or warnings**
+
 - Run `dart analyze tool/dev_runner.dart` separately.
   There should be zero errors. Warnings about unused
   imports are fine to fix but not critical.
 
 **Run it twice**
+
 - Run the script a second time without clearing the
   temp directory (remove the deleteSync line temporarily).
   What happens? Does it crash because data already exists?
@@ -875,6 +935,7 @@ and report the full output including pass/fail for each test.
 ### What to verify
 
 **All tests must pass before moving on**
+
 - Run `flutter test test/domain/` yourself.
   If any test fails, do not move to Phase 9.
   Share the exact failure message with the agent
@@ -882,6 +943,7 @@ and report the full output including pass/fail for each test.
   the service method it exposes as broken.
 
 **Read every test description**
+
 - Go through each test name. If any test description
   is vague (e.g. 'it works correctly'), ask the agent
   to rename it to describe the specific behavior.
@@ -889,6 +951,7 @@ and report the full output including pass/fail for each test.
   they tell you exactly what the system should do.
 
 **Add one test yourself**
+
 - This is important for learning. Pick a case
   the agent didn't cover. For example:
   'streak of 30 days with no gaps gives currentStreak 30'.
@@ -896,6 +959,7 @@ and report the full output including pass/fail for each test.
   If it fails, that's a real bug to fix before moving on.
 
 **Check test isolation**
+
 - Each test must be independent — it must not depend on
   another test running first. Confirm no test uses a
   shared mutable variable that could leak state.
@@ -1016,23 +1080,27 @@ Report the full build output.
 ### What to verify
 
 **Run build_runner and read the output**
+
 - `flutter pub run build_runner build --delete-conflicting-outputs`
   Every provider file should produce a corresponding .g.dart.
   Any error here is usually a missing import or a
   ref type mismatch. Share the exact error with the agent.
 
 **Check keepAlive usage**
+
 - Database and repository providers should be keepAlive: true.
   Habit and entry providers should NOT be keepAlive —
   they should rebuild when dependencies change.
   Confirm this in the generated code.
 
 **Check that providers don't import from presentation/**
+
 - Run `grep -r "presentation" lib/application/` in terminal.
   Should return nothing. If it does, there is a
   layer violation to fix.
 
 **Trace one provider chain manually**
+
 - Pick habitStreak. Trace the dependency chain:
   habitStreakProvider → habitEntryRepositoryProvider
   → objectBoxStoreProvider → openStore().
@@ -1041,11 +1109,13 @@ Report the full build output.
   for debugging provider errors in the future.
 
 **Check that the DateRange class is in domain/, not application/**
+
 - It's a domain concept, not a provider concern.
   If the agent put it in application/, move it to
   lib/domain/enums/date_range.dart and update the import.
 
 **Final architecture check**
+
 - Run `grep -r "import.*objectbox" lib/domain/` in terminal.
   Should return nothing. The domain layer must be
   completely free of ObjectBox imports.
@@ -1060,6 +1130,7 @@ Report the full build output.
 When the agent makes a mistake, use targeted corrections:
 
 **For a specific method bug:**
+
 ```
 In [filename], the [methodName] method has a bug:
 [describe the bug exactly]. Fix only that method.
@@ -1067,6 +1138,7 @@ Do not change any other code in the file.
 ```
 
 **For a missing edge case:**
+
 ```
 In [filename], the [methodName] method does not handle
 [edge case]. Add handling for this case. Show me only
@@ -1074,6 +1146,7 @@ the changed method, not the full file.
 ```
 
 **For an architecture violation:**
+
 ```
 In [filename], I see an import from [wrong layer].
 This violates our architecture: [explain the rule].
@@ -1082,6 +1155,7 @@ flows in the correct direction.
 ```
 
 **For a code explanation:**
+
 ```
 Explain line [N] of [filename] in plain English.
 Then show me two alternative ways this same
@@ -1090,6 +1164,7 @@ tradeoff between them.
 ```
 
 **For a self-audit after any phase:**
+
 ```
 Review the code you just wrote in [filename].
 List any edge cases you did not handle,
