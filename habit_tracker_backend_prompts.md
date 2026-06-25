@@ -382,6 +382,27 @@ After writing all four files, run:
 Confirm that objectbox.g.dart is generated in lib/ and
 objectbox-model.json exists at the project root.
 Report any build errors exactly as they appear.
+
+In lib/data/database/, create habit_schedule_entity.dart
+with class HabitScheduleEntity, following the exact same
+pattern as HabitLimitEntity.
+
+Fields: obId (@Id int), id (String, @Unique @Index),
+habitId (String, @Index), scheduleType (String, store .name),
+scheduledWeekdays (List<String>?, store each Weekday's .name),
+targetCount (int?), effectiveFrom (int, millisecondsSinceEpoch),
+effectiveTo (int?, nullable).
+Add: final ToOne<HabitEntity> habit
+
+Required methods: factory HabitScheduleEntity.fromDto(HabitScheduleDto dto)
+and HabitScheduleDto toDto().
+
+Remove the scheduleType/scheduledWeekdays/targetCount fields
+from HabitEntity to match the updated HabitDto.
+
+After updating all files, run:
+  flutter pub run build_runner build --delete-conflicting-outputs
+Report the full output.
 ```
 
 ### What to verify
@@ -555,6 +576,47 @@ Future<List<HabitLimitDto>> getLimitHistoryForHabit(String habitId)
 
 Create lib/data/repositories/repositories.dart as a barrel export.
 Do not run build_runner. Do not add any UI code.
+
+In lib/data/repositories/, create habit_schedule_repository.dart
+with class HabitScheduleRepository. This follows the exact
+same pattern as HabitLimitRepository.
+
+Methods:
+
+Future<HabitScheduleDto> setSchedule({
+  required String habitId,
+  required ScheduleType scheduleType,
+  List<Weekday>? scheduledWeekdays,
+  int? targetCount,
+  required DateTime effectiveFrom,
+})
+— Find any existing schedule for habitId where effectiveTo is null.
+  If found, set its effectiveTo to effectiveFrom (the moment the
+  new schedule starts is the moment the old one ends — no gap,
+  no overlap). Put it back. Then create and insert the new
+  schedule with effectiveTo null. Return the new dto.
+
+Future<HabitScheduleDto?> getActiveScheduleForHabit(String habitId)
+— Same null-filtering approach as getActiveLimitForHabit:
+  fetch all schedules for habitId, filter for effectiveTo == null
+  in Dart, return as dto or null.
+
+Future<List<HabitScheduleDto>> getScheduleHistoryForHabit(String habitId)
+— All schedules for habitId, sorted by effectiveFrom ascending
+  (ascending, not descending — StreakEngine will need to walk
+  forward through history to find which schedule applied on
+  any given day).
+
+Add this repository to the barrel export file.
+
+IMPORTANT: when a habit is first created in HabitRepository.createHabit(),
+it must also create an initial HabitScheduleDto via
+HabitScheduleRepository.setSchedule() so every habit always has
+at least one schedule covering its entire lifetime from creation.
+Update createHabit() to accept scheduleType, scheduledWeekdays,
+and targetCount as parameters and call setSchedule() internally
+after creating the habit. This means HabitRepository now needs
+a HabitScheduleRepository injected via constructor.
 ```
 
 ### What to verify
@@ -675,6 +737,58 @@ Create a StatisticsResult class in the same file with
 all the above fields, const constructor, toString().
 
 Create lib/domain/services/services.dart as a barrel export.
+```
+
+### Prompt 2
+
+```
+Rewrite StreakEngine in lib/domain/services/streak_engine.dart.
+calculate() now takes:
+  required List<HabitEntryDto> entries
+  required List<HabitScheduleDto> scheduleHistory
+    (sorted ascending by effectiveFrom — caller's responsibility)
+
+Add a private helper:
+HabitScheduleDto? _scheduleForDate(DateTime date, List<HabitScheduleDto> history)
+— walks the sorted history and returns the schedule where
+  date falls between effectiveFrom (inclusive) and
+  effectiveTo (exclusive, or unbounded if null).
+  Returns null if no schedule covers that date (shouldn't
+  happen given every habit has an initial schedule, but
+  handle it defensively by treating it as notScheduled).
+
+For every day being evaluated (whether for the heatmap or
+streak calculation), first resolve which schedule was active
+on that specific day using _scheduleForDate(). Then apply
+the matching logic:
+
+1. scheduleType.daily for that day's active schedule —
+   unchanged daily logic.
+
+2. scheduleType.specificWeekdays — check if that day's weekday
+   is in that schedule's scheduledWeekdays. If not, DayStatus.notScheduled,
+   skip in streak math.
+
+3. scheduleType.timesPerWeek / timesPerMonth — these require
+   window-based evaluation. A window may span a schedule
+   change boundary — handle this by evaluating each day's
+   completion individually against whatever schedule was
+   active that day, but only count a day toward a window's
+   target if specificWeekdays/timesPerWeek/timesPerMonth was
+   the active type that day. Days under a different schedule
+   type within the same window are excluded from that window's
+   count entirely.
+
+This means a single habit's full history may be governed by
+multiple different schedules over time, and the engine must
+respect exactly which schedule was active on each individual day —
+never apply today's schedule retroactively to past days.
+
+After writing this, walk me through one worked example in your
+explanation: a habit created as 'daily' on day 1, changed to
+'specificWeekdays: [monday, wednesday]' on day 15, with entries
+on most days throughout. Show me what the heatmap looks like
+for days 10 through 20 so I can verify the boundary is handled correctly.
 ```
 
 ### What to verify
@@ -1075,6 +1189,27 @@ After writing all files, run:
 
 Confirm all .g.dart files are generated with no errors.
 Report the full build output.
+```
+
+### Prompt 2
+
+```
+Update lib/application/providers/ to account for the schedule
+history change:
+
+Add habitScheduleRepositoryProvider following the same pattern
+as the other repository providers.
+
+Update habitStreakProvider — it must now fetch
+getScheduleHistoryForHabit(habitId) from HabitScheduleRepository
+in addition to entries, and pass both into StreakEngine.calculate().
+
+Add a new provider activeScheduleProvider(String habitId) that
+returns the current schedule via getActiveScheduleForHabit() —
+this is what any future UI will use to show "this habit is
+currently scheduled for Mon/Wed/Fri" without needing the full history.
+
+Run build_runner after. Report the full output.
 ```
 
 ### What to verify
