@@ -7,7 +7,7 @@ class HabitDto {
   final HabitType type;
   final String? unit;
   final double? targetValue;
-  final FrequencyType frequency;
+  // Should I add ScheduleType here?
   final String colorHex;
   final String iconName;
   final DateTime createdAt;
@@ -19,7 +19,6 @@ class HabitDto {
     required this.type,
     this.unit,
     this.targetValue,
-    required this.frequency,
     required this.colorHex,
     required this.iconName,
     required this.createdAt,
@@ -34,7 +33,6 @@ class HabitDto {
     HabitType? type,
     Object? unit = _sentinel,
     Object? targetValue = _sentinel,
-    FrequencyType? frequency,
     String? colorHex,
     String? iconName,
     DateTime? createdAt,
@@ -45,8 +43,9 @@ class HabitDto {
       name: name ?? this.name,
       type: type ?? this.type,
       unit: unit == _sentinel ? this.unit : unit as String?,
-      targetValue: targetValue == _sentinel ? this.targetValue : targetValue as double?,
-      frequency: frequency ?? this.frequency,
+      targetValue: targetValue == _sentinel
+          ? this.targetValue
+          : targetValue as double?,
       colorHex: colorHex ?? this.colorHex,
       iconName: iconName ?? this.iconName,
       createdAt: createdAt ?? this.createdAt,
@@ -61,7 +60,6 @@ class HabitDto {
       'type': type.name,
       'unit': unit,
       'targetValue': targetValue,
-      'frequency': frequency.name,
       'colorHex': colorHex,
       'iconName': iconName,
       'createdAt': createdAt.toIso8601String(),
@@ -76,7 +74,6 @@ class HabitDto {
       type: HabitType.fromString(json['type'] as String),
       unit: json['unit'] as String?,
       targetValue: (json['targetValue'] as num?)?.toDouble(),
-      frequency: FrequencyType.fromString(json['frequency'] as String),
       colorHex: json['colorHex'] as String,
       iconName: json['iconName'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
@@ -94,7 +91,6 @@ class HabitDto {
           type == other.type &&
           unit == other.unit &&
           targetValue == other.targetValue &&
-          frequency == other.frequency &&
           colorHex == other.colorHex &&
           iconName == other.iconName &&
           createdAt == other.createdAt &&
@@ -107,7 +103,6 @@ class HabitDto {
       type.hashCode ^
       unit.hashCode ^
       targetValue.hashCode ^
-      frequency.hashCode ^
       colorHex.hashCode ^
       iconName.hashCode ^
       createdAt.hashCode ^
@@ -115,6 +110,6 @@ class HabitDto {
 
   @override
   String toString() {
-    return 'HabitDto(id: $id, name: $name, type: $type, unit: $unit, targetValue: $targetValue, frequency: $frequency, colorHex: $colorHex, iconName: $iconName, createdAt: $createdAt, isArchived: $isArchived)';
+    return 'HabitDto(id: $id, name: $name, type: $type, unit: $unit, targetValue: $targetValue, colorHex: $colorHex, iconName: $iconName, createdAt: $createdAt, isArchived: $isArchived)';
   }
 }
