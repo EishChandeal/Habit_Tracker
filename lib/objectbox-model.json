@@ -1,0 +1,268 @@
+{
+  "_note1": "KEEP THIS FILE! Check it into a version control system (VCS) like git.",
+  "_note2": "ObjectBox manages crucial IDs for your object model. See docs for details.",
+  "_note3": "If you have VCS merge conflicts, you must resolve them according to ObjectBox docs.",
+  "entities": [
+    {
+      "id": "1:573904481184556594",
+      "lastPropertyId": "10:2670188055364762326",
+      "name": "HabitEntity",
+      "properties": [
+        {
+          "id": "1:1319189913911486811",
+          "name": "obId",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:7994893434822550204",
+          "name": "id",
+          "type": 9,
+          "flags": 2080,
+          "indexId": "1:4000399812115691134"
+        },
+        {
+          "id": "3:7373897724264342342",
+          "name": "name",
+          "type": 9
+        },
+        {
+          "id": "4:8397818970998185383",
+          "name": "type",
+          "type": 9
+        },
+        {
+          "id": "5:4896759246395696238",
+          "name": "unit",
+          "type": 9
+        },
+        {
+          "id": "6:3233159499228635376",
+          "name": "targetValue",
+          "type": 8
+        },
+        {
+          "id": "7:8097592847452607485",
+          "name": "colorHex",
+          "type": 9
+        },
+        {
+          "id": "8:9193291435403199984",
+          "name": "iconName",
+          "type": 9
+        },
+        {
+          "id": "9:7056154650241883872",
+          "name": "createdAt",
+          "type": 6
+        },
+        {
+          "id": "10:2670188055364762326",
+          "name": "isArchived",
+          "type": 1
+        }
+      ],
+      "relations": [
+        {
+          "id": "1:1576902478958345771",
+          "name": "entries",
+          "targetId": "2:7270468841218197411"
+        },
+        {
+          "id": "2:8911788270296820664",
+          "name": "limits",
+          "targetId": "3:2351230427218951919"
+        },
+        {
+          "id": "3:1994842980754943346",
+          "name": "schedules",
+          "targetId": "4:4949055564855433280"
+        }
+      ]
+    },
+    {
+      "id": "2:7270468841218197411",
+      "lastPropertyId": "8:8051186685253687205",
+      "name": "HabitEntryEntity",
+      "properties": [
+        {
+          "id": "1:199341000485935701",
+          "name": "obId",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:2495815665159480613",
+          "name": "id",
+          "type": 9,
+          "flags": 2080,
+          "indexId": "2:2929817633120900538"
+        },
+        {
+          "id": "3:1853518911165016646",
+          "name": "habitId",
+          "type": 9,
+          "flags": 2048,
+          "indexId": "3:7559051510036612446"
+        },
+        {
+          "id": "4:8395650495486155885",
+          "name": "date",
+          "type": 6
+        },
+        {
+          "id": "5:5727197829065924138",
+          "name": "value",
+          "type": 8
+        },
+        {
+          "id": "6:8182861363365812859",
+          "name": "note",
+          "type": 9
+        },
+        {
+          "id": "7:3683551108326231562",
+          "name": "createdAt",
+          "type": 6
+        },
+        {
+          "id": "8:8051186685253687205",
+          "name": "habitEntityId",
+          "type": 11,
+          "flags": 520,
+          "indexId": "8:452708837900837499",
+          "relationTarget": "HabitEntity"
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "3:2351230427218951919",
+      "lastPropertyId": "8:3592472940850790824",
+      "name": "HabitLimitEntity",
+      "properties": [
+        {
+          "id": "1:6162794246145707695",
+          "name": "obId",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:8940765371604071877",
+          "name": "id",
+          "type": 9,
+          "flags": 2080,
+          "indexId": "4:4015351276567415038"
+        },
+        {
+          "id": "3:6089280998596095484",
+          "name": "habitId",
+          "type": 9,
+          "flags": 2048,
+          "indexId": "5:1348981944105808181"
+        },
+        {
+          "id": "4:2332617046298988374",
+          "name": "minValue",
+          "type": 8
+        },
+        {
+          "id": "5:3008879668067480424",
+          "name": "maxValue",
+          "type": 8
+        },
+        {
+          "id": "6:2335213100047645508",
+          "name": "effectiveFrom",
+          "type": 6
+        },
+        {
+          "id": "7:3447234925971875943",
+          "name": "effectiveTo",
+          "type": 6
+        },
+        {
+          "id": "8:3592472940850790824",
+          "name": "habitEntityId",
+          "type": 11,
+          "flags": 520,
+          "indexId": "9:2017521833977215652",
+          "relationTarget": "HabitEntity"
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "4:4949055564855433280",
+      "lastPropertyId": "9:1554382774578784439",
+      "name": "HabitScheduleEntity",
+      "properties": [
+        {
+          "id": "1:7114162478748547848",
+          "name": "obId",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:3896800405334163375",
+          "name": "id",
+          "type": 9,
+          "flags": 2080,
+          "indexId": "6:7651739384994388124"
+        },
+        {
+          "id": "3:2390492813440680550",
+          "name": "habitId",
+          "type": 9,
+          "flags": 2048,
+          "indexId": "7:941017925296588415"
+        },
+        {
+          "id": "4:340920481937363122",
+          "name": "scheduleType",
+          "type": 9
+        },
+        {
+          "id": "5:5675944086218362923",
+          "name": "scheduledWeekdays",
+          "type": 30
+        },
+        {
+          "id": "6:3970098139747918476",
+          "name": "targetCount",
+          "type": 6
+        },
+        {
+          "id": "7:5300861930919708352",
+          "name": "effectiveFrom",
+          "type": 6
+        },
+        {
+          "id": "8:415063781343761503",
+          "name": "effectiveTo",
+          "type": 6
+        },
+        {
+          "id": "9:1554382774578784439",
+          "name": "habitEntityId",
+          "type": 11,
+          "flags": 520,
+          "indexId": "10:835623659848710079",
+          "relationTarget": "HabitEntity"
+        }
+      ],
+      "relations": []
+    }
+  ],
+  "lastEntityId": "4:4949055564855433280",
+  "lastIndexId": "10:835623659848710079",
+  "lastRelationId": "3:1994842980754943346",
+  "lastSequenceId": "0:0",
+  "modelVersion": 5,
+  "modelVersionParserMinimum": 5,
+  "retiredEntityUids": [],
+  "retiredIndexUids": [],
+  "retiredPropertyUids": [],
+  "retiredRelationUids": [],
+  "version": 1
+}
