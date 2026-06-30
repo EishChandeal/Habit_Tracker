@@ -536,6 +536,13 @@ Future<HabitEntryDto> upsertEntry({
   ObjectBox has no native upsert on non-@Id fields
   so implement this check manually.
 
+- Validation: reject dates in the future (throw ArgumentError
+  if normalized date is after today's midnight UTC).
+  Allow any past date — this is how users backfill missed days.
+  Add a comment explaining this is intentional for backfilling.
+- Why: Without this, the user (or a bug) could create entries for future dates,
+  which would  corrupt streak calculations. The StreakEngine iterates "from first entry to today" — a future entry would extend that range incorrectly.
+
 Future<List<HabitEntryDto>> getEntriesForHabit(
   String habitId, DateTime from, DateTime to)
 — normalize from and to dates.
@@ -551,6 +558,23 @@ Stream<List<HabitEntryDto>> watchEntriesForHabit(String habitId)
 Future<List<HabitEntryDto>> getEntriesForDate(DateTime date)
 — normalize the date, query all entries where date matches.
 
+Future<Map<String, HabitEntryDto?>> getEntryStatusForDate(
+  DateTime date,
+  List<String> habitIds,
+)
+
+— normalize the date.
+  Query all entries for that date.
+  Return a Map where every habitId in the input list is a key,
+  and the value is either the matching HabitEntryDto or null
+  (null = no entry = not completed).
+  This gives the UI a single call to render today's dashboard.
+
+Future<DateTime?> getLastEntryDateForHabit(String habitId)
+— Query all entries for habitId, order by date descending,
+  return the date of the first result, or null if no entries.
+  This is used by the UI to show "last logged: 3 days ago"
+  and to highlight habits that haven't been updated recently.
 ---
 
 FILE 3: habit_limit_repository.dart — class HabitLimitRepository
@@ -679,6 +703,16 @@ static StreakResult calculate({
   required List<HabitEntryDto> entries,
   required List<HabitScheduleDto> scheduleHistory,
 })
+
+   NOTE ON IMPLICIT ABSENCE: The entries list passed to
+   calculate() will NOT contain entries for missed days —
+   absence is the signal. The engine must iterate every
+   calendar day between the first entry and today, and
+   for any day with no matching entry in the list, treat
+   it as DayStatus.missed (if the day was scheduled) or
+   DayStatus.notScheduled (if the active schedule doesn't
+   require that day). Do NOT assume the entries list is
+   complete — it will have gaps for missed days.
 
 scheduleHistory must be sorted ascending by effectiveFrom —
 this is the caller's responsibility.
@@ -1181,21 +1215,24 @@ Future<List<HabitEntryDto>> entriesForDate(
 )
 — returns getEntriesForDate(date) from the entry repository
 
+@riverpod
+class EntryActions extends _$EntryActions {
+  // or use a simple function provider:
+  Future<HabitEntryDto> logEntry({
+    required String habitId,
+    required DateTime date,
+    required double value,
+    String? note,
+  }) async {
+    final repo = ref.read(habitEntryRepositoryProvider);
+    return repo.upsertEntry(
+      habitId: habitId, date: date, value: value, note: note);
+  }
+}
+— Because the UI will need a way to both log today's entry and backfill previous days.
+
 ---
 
-Create lib/application/providers/providers.dart
-as a barrel export.
-
-After writing all files, run:
-  flutter pub run build_runner build --delete-conflicting-outputs
-
-Confirm all .g.dart files are generated with no errors.
-Report the full build output.
-```
-
-### Prompt 2
-
-```
 Update lib/application/providers/ to account for the schedule
 history change:
 
@@ -1211,6 +1248,64 @@ returns the current schedule via getActiveScheduleForHabit() —
 this is what any future UI will use to show "this habit is
 currently scheduled for Mon/Wed/Fri" without needing the full history.
 
+---
+
+FILE 6: dashboard_providers.dart
+
+@riverpod
+Future<List<HabitDayStatus>> todayDashboard(TodayDashboardRef ref)
+— get the habit repository: fetch all active (non-archived) habits
+  get the entry repository: call getEntriesForDate(DateTime.now().toUtc())
+  get the schedule repository
+  for each habit:
+    - get its active schedule
+    - check if today is a scheduled day for that habit
+    - find if an entry exists for today
+    - produce a HabitDayStatus object with:
+        HabitDto habit, HabitEntryDto? entry, bool isScheduledToday, DayStatus status
+  return the list sorted by habit name
+
+Create a HabitDayStatus class in lib/domain/services/
+or lib/data/models/dtos/:
+  final HabitDto habit
+  final HabitEntryDto? entry       (null = not yet logged)
+  final bool isScheduledToday
+  final DayStatus status           (computed: met/missed/notScheduled)
+
+---
+
+FILE 7: day_change_provider.dart
+
+Create a mechanism to detect when the calendar day changes
+while the app is open. Two scenarios to handle:
+
+1. App is open at midnight — the day rolls over.
+   Use a Timer that fires at the next midnight UTC.
+   When it fires, invalidate todayDashboardProvider
+   so the UI refreshes to show the new day's blank slate.
+
+2. App is resumed from background on a new day.
+   Use WidgetsBindingObserver.didChangeAppLifecycleState.
+   When the app resumes (AppLifecycleState.resumed),
+   compare the current date to the last-known date.
+   If different, invalidate todayDashboardProvider.
+
+Store the "last active date" in a simple Riverpod state
+provider (not in the database — this is ephemeral UI state).
+
+---
+
+Create lib/application/providers/providers.dart
+as a barrel export.
+
+After writing all files, run:
+  flutter pub run build_runner build --delete-conflicting-outputs
+
+Confirm all .g.dart files are generated with no errors.
+Report the full build output.
+```
+
+```
 Run build_runner after. Report the full output.
 ```
 
@@ -1259,6 +1354,23 @@ Run build_runner after. Report the full output.
 - Run `grep -r "import.*flutter" lib/data/` in terminal.
   Should return nothing (path_provider is allowed only
   in the provider layer, not in data/).
+
+---
+
+## Future UI Phases — Backfill UI Considerations
+
+The habit detail screen must:
+
+- Show a calendar/heatmap view (data from StreakEngine)
+- Allow tapping on any PAST day to log or edit an entry
+  (calls upsertEntry with that day's date)
+- Prevent tapping on FUTURE days (greyed out / disabled)
+- Show a visual indicator on days with no entry
+  (e.g., empty circle vs filled circle)
+- When the user taps a past day with no entry, show an
+  input dialog pre-filled with the date. On save, call
+  upsertEntry. The dashboard and streak should update
+  reactively via Riverpod's dependency invalidation.
 
 ---
 
