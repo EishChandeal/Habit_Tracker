@@ -1155,6 +1155,7 @@ HabitRepository habitRepository(HabitRepositoryRef ref)
 Same pattern for:
 HabitEntryRepository habitEntryRepository(...)
 HabitLimitRepository habitLimitRepository(...)
+HabitScheduleRepository habitScheduleRepository(...)
 
 ---
 
@@ -1169,6 +1170,18 @@ Stream<List<HabitDto>> habitList(HabitListRef ref)
 Future<HabitDto?> habitById(HabitByIdRef ref, String habitId)
 — get the repository, call getHabitById(habitId)
 
+@riverpod
+Future<HabitScheduleDto?> activeSchedule(ActiveScheduleRef ref, String habitId)
+— get the schedule repository via ref.watch(habitScheduleRepositoryProvider)
+  call and return getActiveScheduleForHabit(habitId)
+  (This is what any future UI will use to show "this habit is currently scheduled for Mon/Wed/Fri" without needing full history.)
+
+@riverpod
+Future<HabitLimitDto?> activeLimit(ActiveLimitRef ref, String habitId)
+— get the limit repository via ref.watch(habitLimitRepositoryProvider)
+  call and return getActiveLimitForHabit(habitId)
+  (This is what any future UI will use to show current targets like "10,000 steps".)
+
 ---
 
 FILE 4: streak_providers.dart
@@ -1179,12 +1192,12 @@ lib/domain/enums/date_range.dart for use in providers.
 
 @riverpod
 Future<StreakResult> habitStreak(HabitStreakRef ref, String habitId)
-— get the entry repository
+— get the entry repository and schedule repository
   fetch entries for the last 365 days:
   from: DateTime.now().toUtc().subtract(const Duration(days: 365))
   to: DateTime.now().toUtc()
-  get the habit to read its frequency
-  return StreakEngine.calculate(entries: entries, frequency: habit.frequency)
+  fetch schedule history via getScheduleHistoryForHabit(habitId)
+  return StreakEngine.calculate(entries: entries, scheduleHistory: scheduleHistory)
 
 @riverpod
 Future<StatisticsResult> habitStatistics(
@@ -1233,36 +1246,22 @@ class EntryActions extends _$EntryActions {
 
 ---
 
-Update lib/application/providers/ to account for the schedule
-history change:
-
-Add habitScheduleRepositoryProvider following the same pattern
-as the other repository providers.
-
-Update habitStreakProvider — it must now fetch
-getScheduleHistoryForHabit(habitId) from HabitScheduleRepository
-in addition to entries, and pass both into StreakEngine.calculate().
-
-Add a new provider activeScheduleProvider(String habitId) that
-returns the current schedule via getActiveScheduleForHabit() —
-this is what any future UI will use to show "this habit is
-currently scheduled for Mon/Wed/Fri" without needing the full history.
-
----
-
 FILE 6: dashboard_providers.dart
 
 @riverpod
 Future<List<HabitDayStatus>> todayDashboard(TodayDashboardRef ref)
 — get the habit repository: fetch all active (non-archived) habits
-  get the entry repository: call getEntriesForDate(DateTime.now().toUtc())
-  get the schedule repository
+  CRITICAL TIMEZONE RULE: Determine today using the user's local calendar day, then normalize to UTC midnight:
+    final localNow = DateTime.now();
+    final todayUtc = DateTime.utc(localNow.year, localNow.month, localNow.day);
+  get the entry repository: call getEntriesForDate(todayUtc)
+  get the schedule repository and limit repository
   for each habit:
-    - get its active schedule
-    - check if today is a scheduled day for that habit
+    - get its active schedule and active limit
+    - check if today is a scheduled day for that habit based on the active schedule
     - find if an entry exists for today
     - produce a HabitDayStatus object with:
-        HabitDto habit, HabitEntryDto? entry, bool isScheduledToday, DayStatus status
+        HabitDto habit, HabitEntryDto? entry, bool isScheduledToday, DayStatus status, HabitScheduleDto? activeSchedule, HabitLimitDto? activeLimit
   return the list sorted by habit name
 
 Create a HabitDayStatus class in lib/domain/services/
@@ -1271,6 +1270,8 @@ or lib/data/models/dtos/:
   final HabitEntryDto? entry       (null = not yet logged)
   final bool isScheduledToday
   final DayStatus status           (computed: met/missed/notScheduled)
+  final HabitScheduleDto? activeSchedule
+  final HabitLimitDto? activeLimit
 
 ---
 
@@ -1280,18 +1281,19 @@ Create a mechanism to detect when the calendar day changes
 while the app is open. Two scenarios to handle:
 
 1. App is open at midnight — the day rolls over.
-   Use a Timer that fires at the next midnight UTC.
+   Use a Timer that fires at the next midnight local time.
    When it fires, invalidate todayDashboardProvider
    so the UI refreshes to show the new day's blank slate.
 
 2. App is resumed from background on a new day.
    Use WidgetsBindingObserver.didChangeAppLifecycleState.
    When the app resumes (AppLifecycleState.resumed),
-   compare the current date to the last-known date.
+   compare the current local date to the last-known date.
    If different, invalidate todayDashboardProvider.
 
 Store the "last active date" in a simple Riverpod state
 provider (not in the database — this is ephemeral UI state).
+NOTE ON LIFECYCLE OWNERSHIP: Make this provider @Riverpod(keepAlive: true) so it can be watched by the root app widget or dashboard, ensuring the timer and lifecycle observer initialize immediately when the app opens.
 
 ---
 

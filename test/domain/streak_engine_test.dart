@@ -20,8 +20,8 @@ void main() {
     effectiveFrom: DateTime.utc(2000, 1, 1),
   );
 
-  final today = DateTime.now().toUtc();
-  final todayMidnight = DateTime.utc(today.year, today.month, today.day);
+  final localNow = DateTime.now();
+  final todayMidnight = DateTime.utc(localNow.year, localNow.month, localNow.day);
 
   group('empty input', () {
     test('returns currentStreak of 0 when entry list is empty', () {

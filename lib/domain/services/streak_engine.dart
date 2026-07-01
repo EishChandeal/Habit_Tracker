@@ -44,8 +44,8 @@ class StreakEngine {
     final entryMap = {for (final e in normalizedEntries) e.date: e};
 
     final earliestEntryDate = normalizedEntries.first.date;
-    final today = DateTime.now().toUtc();
-    final todayMidnight = DateTime.utc(today.year, today.month, today.day);
+    final localNow = DateTime.now();
+    final todayMidnight = DateTime.utc(localNow.year, localNow.month, localNow.day);
 
     final startDate = earliestEntryDate;
 
