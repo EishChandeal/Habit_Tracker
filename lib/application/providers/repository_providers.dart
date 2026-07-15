@@ -12,6 +12,8 @@ Future<HabitScheduleRepository> habitScheduleRepository(
   return HabitScheduleRepository(store);
 }
 
+// resp. .g.dart file
+// 2.
 @Riverpod(keepAlive: true)
 Future<HabitRepository> habitRepository(HabitRepositoryRef ref) async {
   final store = await ref.watch(objectBoxStoreProvider.future);

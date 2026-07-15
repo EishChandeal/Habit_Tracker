@@ -5,6 +5,9 @@ import 'habit_entry_entity.dart';
 import 'habit_limit_entity.dart';
 import 'habit_schedule_entity.dart';
 
+// 6.  Defines the ObjectBox table scheme (HabitEntity) and the conversion methods (fromDto/toDto).
+// lib/objectbox.g.dart
+// – Generated database mapping code (defines static query properties like HabitEntity_.isArchived).
 @Entity()
 class HabitEntity {
   @Id()

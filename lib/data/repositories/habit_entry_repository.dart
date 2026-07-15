@@ -160,4 +160,43 @@ class HabitEntryRepository {
     results.sort((a, b) => b.date.compareTo(a.date));
     return DateTime.fromMillisecondsSinceEpoch(results.first.date, isUtc: true);
   }
+
+  Future<HabitEntryDto?> getEntryForDate(String habitId, DateTime date) async {
+    final normalizedDate = _normalizeDate(date);
+    final query = _box
+        .query(
+          HabitEntryEntity_.habitId.equals(habitId).and(
+            HabitEntryEntity_.date.equals(
+              normalizedDate.millisecondsSinceEpoch,
+            ),
+          ),
+        )
+        .build();
+    final result = query.findFirst();
+    query.close();
+    return result?.toDto();
+  }
+
+  Future<void> deleteEntry(String id) async {
+    final query = _box.query(HabitEntryEntity_.id.equals(id)).build();
+    final ids = query.findIds();
+    query.close();
+    if (ids.isNotEmpty) {
+      _box.removeMany(ids);
+    }
+  }
+
+  Stream<List<HabitEntryDto>> watchEntriesForDate(DateTime date) {
+    final normalizedDate = _normalizeDate(date);
+    return _box
+        .query(
+          HabitEntryEntity_.date.equals(normalizedDate.millisecondsSinceEpoch),
+        )
+        .watch(triggerImmediately: true)
+        .map((query) {
+          final list = query.find();
+          list.sort((a, b) => a.date.compareTo(b.date));
+          return list.map((e) => e.toDto()).toList();
+        });
+  }
 }

@@ -1,6 +1,7 @@
 import 'dart:core';
 import '../../../domain/enums/enums.dart';
 
+// 5. Defines the pure Dart HabitDto data structure that the UI displays.
 class HabitDto {
   final String id;
   final String name;

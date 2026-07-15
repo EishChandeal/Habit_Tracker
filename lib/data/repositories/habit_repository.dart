@@ -2,6 +2,9 @@ import 'package:uuid/uuid.dart';
 import 'package:habit_tracker/data/models/dtos/dtos.dart';
 import 'package:habit_tracker/domain/enums/enums.dart';
 import 'package:habit_tracker/data/database/habit_entity.dart';
+import 'package:habit_tracker/data/database/habit_entry_entity.dart';
+import 'package:habit_tracker/data/database/habit_schedule_entity.dart';
+import 'package:habit_tracker/data/database/habit_limit_entity.dart';
 import 'package:habit_tracker/objectbox.g.dart';
 import 'habit_schedule_repository.dart';
 
@@ -91,9 +94,68 @@ class HabitRepository {
     _box.put(entity);
   }
 
+  Future<HabitDto> unarchiveHabit(String id) async {
+    final query = _box.query(HabitEntity_.id.equals(id)).build();
+    final entity = query.findFirst();
+    query.close();
+
+    if (entity == null) {
+      throw StateError('Habit not found with id: $id');
+    }
+
+    entity.isArchived = false;
+    _box.put(entity);
+    return entity.toDto();
+  }
+
+  Future<void> deleteHabit(String id) async {
+    // Cascade delete related entries
+    final entryBox = _store.box<HabitEntryEntity>();
+    final entryQuery = entryBox.query(HabitEntryEntity_.habitId.equals(id)).build();
+    final entryIds = entryQuery.findIds();
+    entryQuery.close();
+    if (entryIds.isNotEmpty) {
+      entryBox.removeMany(entryIds);
+    }
+
+    // Cascade delete related schedules
+    final scheduleBox = _store.box<HabitScheduleEntity>();
+    final scheduleQuery = scheduleBox.query(HabitScheduleEntity_.habitId.equals(id)).build();
+    final scheduleIds = scheduleQuery.findIds();
+    scheduleQuery.close();
+    if (scheduleIds.isNotEmpty) {
+      scheduleBox.removeMany(scheduleIds);
+    }
+
+    // Cascade delete related limits
+    final limitBox = _store.box<HabitLimitEntity>();
+    final limitQuery = limitBox.query(HabitLimitEntity_.habitId.equals(id)).build();
+    final limitIds = limitQuery.findIds();
+    limitQuery.close();
+    if (limitIds.isNotEmpty) {
+      limitBox.removeMany(limitIds);
+    }
+
+    // Delete the habit entity itself
+    final query = _box.query(HabitEntity_.id.equals(id)).build();
+    final habitIds = query.findIds();
+    query.close();
+    if (habitIds.isNotEmpty) {
+      _box.removeMany(habitIds);
+    }
+  }
+
+  // 4.  Implements watchAllHabits(), runs the DB query, and converts entities to DTOs.
   Stream<List<HabitDto>> watchAllHabits() {
     return _box
         .query(HabitEntity_.isArchived.equals(false))
+        .watch(triggerImmediately: true)
+        .map((query) => query.find().map((e) => e.toDto()).toList());
+  }
+
+  Stream<List<HabitDto>> watchArchivedHabits() {
+    return _box
+        .query(HabitEntity_.isArchived.equals(true))
         .watch(triggerImmediately: true)
         .map((query) => query.find().map((e) => e.toDto()).toList());
   }
