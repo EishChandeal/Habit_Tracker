@@ -1,10 +1,10 @@
 # The way I have in mind
 
-1. Detailed screen descriptions, and feature wise prompt generation
-2. Refinement and rearrangement in steps, pre-determine the tests that will need to be performed per phase/ per step (if the step is a feature in itself I suppose)
+1. write the UI screen descriptions
+2. refine their language with AI, modify them
 3. Give V0 and Lovable those descriptions, see if they can come up with a more "cooler" simpler and better looking UI screen
-4. Get advice on the skill files that can be used, keeping limited number of available tokens in mind
-5. Build. Break. Re-build. (Adaptive Dev Loop)
+4. what reference "skill file" or information can I give them for high quality result.
+5. Build. Break. Re-build after analysis and testing. (Adaptive Dev Loop)
 
 6. Reach a final mock app use it on mobile device for a while. Now is the time to step gas on in the Research, understanding and code optimization department.
 
