@@ -8,6 +8,98 @@
 
 6. Reach a final mock app use it on mobile device for a while. Now is the time to step gas on in the Research, understanding and code optimization department.
 
+# Plan for the first 2 steps:
+
+## Recommended Workflow
+
+### 1. **Document Structure**
+
+Create a single `UI_DEVELOPMENT_PLAN.md` that serves as both your product doc and prompt repository. Structure it like this:
+
+```markdown
+# UI Development Plan - V1
+
+## Overview
+
+- Core principle: Minimum friction, one-tap interactions
+- Tech stack: Flutter, Riverpod, Clean Architecture
+- Design language: [Brief note about your wireframes/style]
+
+## Phase Structure
+
+Each phase = one complete, testable feature
+```
+
+### 2. **Our Collaboration Process**
+
+For each feature, I suggest this flow:
+
+**Step A: You explain the feature**
+
+- What the user needs to accomplish
+- The flow (screen to screen)
+- Any specific interactions (swipe, tap, long press)
+- Reference your wireframes/screenshots
+
+**Step B: I translate into a structured prompt**
+
+- Clear UI specifications
+- Widget hierarchy
+- State management connections (which Riverpod providers to use)
+- Edge cases and loading states
+- Acceptance criteria for testing
+
+**Step C: You review, we refine**
+
+- You check if my interpretation matches your vision
+- We iterate until the prompt is precise
+
+### 3. **Phase Organization**
+
+Based on your habit tracker, here's a suggested phase order:
+
+**Phase 1: Core Habit Logging** (The "one-tap" experience)
+
+- Main today view
+- Quick habit completion toggle
+- Visual feedback/satisfaction animations
+
+**Phase 2: Habit Management**
+
+- CRUD operations for habits
+- Target setting interface
+- Scheduling/frequency configuration
+
+**Phase 3: Streaks & Progress**
+
+- Streak visualization
+- History/calendar view
+- Statistics dashboard
+
+**Phase 4: Polishing & Edge Cases**
+
+- Empty states
+- Error handling UI
+- Responsive adaptations
+- Micro-interactions
+
+### 4. **What I Need From You Now**
+
+To start Phase 1, please share:
+
+1. A screenshot or rough wireframe of your designed screen
+2. A walkthrough of how you envision the main habit logging flow working
+3. Any specific animations or micro-interactions you have in mind
+
+This approach ensures:
+
+- You maintain creative control while I handle structural clarity
+- Each phase produces a testable increment
+- The markdown file becomes your single source of truth
+- Future UI changes only require updating specific phase prompts
+
+Want to start with Phase 1? Show me what you've designed so far.
+
 # 1 To avoid clog and keep the least number of elements on screen
 
 1. "Contextual Action Bar" or "Selection Mode", You just need to track a single piece of state and conditionally render your UI based on it.
