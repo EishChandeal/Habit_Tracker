@@ -5,6 +5,7 @@ import 'package:habit_tracker/data/database/app_database.dart';
 import 'package:habit_tracker/application/providers/providers.dart';
 
 import 'package:habit_tracker/presentation/theme/app_theme.dart';
+import 'package:habit_tracker/presentation/screens/home/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,36 +39,7 @@ class HabitTrackerApp extends ConsumerWidget {
       title: 'Habit Tracker',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
-      home: const Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.check_circle_outline,
-                size: 64,
-                color: AppColors.blue,
-              ),
-              SizedBox(height: 16),
-              Text(
-                'Habit Tracker Backend Ready',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              SizedBox(height: 8),
-              Text(
-                'Riverpod providers, ObjectBox store, and DayChangeController active.',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.white70,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+      home: const HomeScreen(),
     );
   }
 }

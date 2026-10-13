@@ -1,0 +1,450 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import 'package:habit_tracker/application/providers/providers.dart';
+import 'package:habit_tracker/domain/enums/enums.dart';
+import 'package:habit_tracker/domain/models/habit_day_status.dart';
+import 'package:habit_tracker/presentation/theme/app_theme.dart';
+import 'package:habit_tracker/presentation/widgets/habit_card.dart';
+
+/// Main Home screen displaying the date/progress header and today's habits.
+/// Corresponds to Section 48-84 of PROJECT_BRIEF.md and DESIGN.md.
+class HomeScreen extends ConsumerWidget {
+  const HomeScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dashboardAsync = ref.watch(todayDashboardProvider);
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Top action & date header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: _buildHeaderRow(context, dashboardAsync.valueOrNull ?? []),
+            ),
+
+            // Habit list / Content area
+            Expanded(
+              child: dashboardAsync.when(
+                data: (habits) {
+                  if (habits.isEmpty) {
+                    return _buildEmptyState(context);
+                  }
+                  return _buildHabitList(context, ref, habits);
+                },
+                loading: () => const Center(
+                  child: CircularProgressIndicator(
+                    color: AppColors.blue,
+                  ),
+                ),
+                error: (err, stack) => Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          size: 48,
+                          color: AppColors.orange,
+                        ),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'Failed to load habits',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primaryText,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          err.toString(),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.mutedGrey,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton.icon(
+                          onPressed: () => ref.invalidate(todayDashboardProvider),
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Header row containing:
+  /// 1. History / Date button (approx 171 x 88)
+  /// 2. Add button (approx 92 x 88)
+  /// 3. Settings button (approx 92 x 88)
+  Widget _buildHeaderRow(BuildContext context, List<HabitDayStatus> habits) {
+    final today = DateTime.now();
+    final formattedDate = DateFormat('d MMM').format(today);
+
+    // Calculate completion count for habits scheduled today
+    final scheduledHabits = habits.where((h) => h.isScheduledToday).toList();
+    final completedCount = scheduledHabits
+        .where((h) => h.status == DayStatus.met || h.status == DayStatus.exceeded)
+        .length;
+    final totalScheduled = scheduledHabits.length;
+
+    const double headerHeight = 84;
+
+    return Row(
+      children: [
+        // 1. History / Date button
+        Expanded(
+          flex: 2,
+          child: Material(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(16),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('History screen will be accessible here.'),
+                    duration: Duration(seconds: 1),
+                  ),
+                );
+              },
+              child: Container(
+                height: headerHeight,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      formattedDate,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryText,
+                        fontFamily: AppTheme.fontPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$completedCount / $totalScheduled completed',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.mutedGrey,
+                        fontFamily: AppTheme.fontPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        const SizedBox(width: 12),
+
+        // 2. Add button (warm orange accent fill)
+        Expanded(
+          flex: 1,
+          child: Material(
+            color: AppColors.orange,
+            borderRadius: BorderRadius.circular(16),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Add Habit screen will open here.'),
+                    duration: Duration(seconds: 1),
+                  ),
+                );
+              },
+              child: const SizedBox(
+                height: headerHeight,
+                child: Center(
+                  child: Icon(
+                    Icons.add,
+                    size: 32,
+                    color: AppColors.controlText,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        const SizedBox(width: 12),
+
+        // 3. Settings button
+        Expanded(
+          flex: 1,
+          child: Material(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(16),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Settings screen will open here.'),
+                    duration: Duration(seconds: 1),
+                  ),
+                );
+              },
+              child: const SizedBox(
+                height: headerHeight,
+                child: Center(
+                  child: Icon(
+                    Icons.settings_outlined,
+                    size: 28,
+                    color: AppColors.primaryText,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHabitList(
+    BuildContext context,
+    WidgetRef ref,
+    List<HabitDayStatus> habits,
+  ) {
+    return ListView.separated(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      itemCount: habits.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        final item = habits[index];
+        return HabitCard(
+          item: item,
+          onTap: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Tapped ${item.habit.name} (Expanded panel coming)'),
+                duration: const Duration(seconds: 1),
+              ),
+            );
+          },
+          onCompletionTap: () => _handleCompletionTap(context, ref, item),
+          onLongPress: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Selected ${item.habit.name} (Edit/Delete options)'),
+                duration: const Duration(seconds: 1),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _handleCompletionTap(
+    BuildContext context,
+    WidgetRef ref,
+    HabitDayStatus item,
+  ) {
+    final now = DateTime.now();
+    final todayUtc = DateTime.utc(now.year, now.month, now.day);
+    final actions = ref.read(entryActionsProvider.notifier);
+
+    if (item.habit.type == HabitType.boolean) {
+      final isCompleted =
+          item.status == DayStatus.met || item.status == DayStatus.exceeded;
+      if (isCompleted && item.entry != null) {
+        // Toggle off
+        actions.deleteEntry(
+          entryId: item.entry!.id,
+          habitId: item.habit.id,
+        );
+      } else {
+        // Mark complete
+        actions.logEntry(
+          habitId: item.habit.id,
+          date: todayUtc,
+          value: 1.0,
+        );
+      }
+    } else {
+      // Numeric entry dialog / bottom sheet
+      _showNumericEntrySheet(context, ref, item, todayUtc);
+    }
+  }
+
+  void _showNumericEntrySheet(
+    BuildContext context,
+    WidgetRef ref,
+    HabitDayStatus item,
+    DateTime date,
+  ) {
+    final controller = TextEditingController(
+      text: item.entry != null
+          ? (item.entry!.value == item.entry!.value.roundToDouble()
+              ? item.entry!.value.toInt().toString()
+              : item.entry!.value.toString())
+          : (item.habit.targetValue != null
+              ? (item.habit.targetValue == item.habit.targetValue!.roundToDouble()
+                  ? item.habit.targetValue!.toInt().toString()
+                  : item.habit.targetValue.toString())
+              : ''),
+    );
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 20,
+            left: 20,
+            right: 20,
+            top: 20,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Log ${item.habit.name}',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primaryText,
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                autofocus: true,
+                style: const TextStyle(color: AppColors.primaryText, fontSize: 18),
+                decoration: InputDecoration(
+                  labelText: item.habit.unit != null && item.habit.unit!.isNotEmpty
+                      ? 'Value (${item.habit.unit})'
+                      : 'Value',
+                  suffixText: item.habit.unit,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  if (item.entry != null)
+                    TextButton(
+                      onPressed: () {
+                        ref.read(entryActionsProvider.notifier).deleteEntry(
+                              entryId: item.entry!.id,
+                              habitId: item.habit.id,
+                            );
+                        Navigator.pop(sheetContext);
+                      },
+                      child: const Text(
+                        'Clear',
+                        style: TextStyle(color: AppColors.orange),
+                      ),
+                    ),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: () => Navigator.pop(sheetContext),
+                    child: const Text(
+                      'Cancel',
+                      style: TextStyle(color: AppColors.mutedGrey),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton(
+                    onPressed: () {
+                      final val = double.tryParse(controller.text.trim());
+                      if (val != null) {
+                        ref.read(entryActionsProvider.notifier).logEntry(
+                              habitId: item.habit.id,
+                              date: date,
+                              value: val,
+                            );
+                      }
+                      Navigator.pop(sheetContext);
+                    },
+                    child: const Text('Save'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: AppColors.mutedGrey.withValues(alpha: 0.2),
+                ),
+              ),
+              child: const Icon(
+                Icons.track_changes,
+                size: 48,
+                color: AppColors.blue,
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'No habits yet',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primaryText,
+                fontFamily: AppTheme.fontPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Tap the orange + button above to create your first habit or task.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.mutedGrey,
+                fontFamily: AppTheme.fontPrimary,
+                height: 1.4,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
