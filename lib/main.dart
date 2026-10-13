@@ -4,6 +4,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:habit_tracker/data/database/app_database.dart';
 import 'package:habit_tracker/application/providers/providers.dart';
 
+import 'package:habit_tracker/presentation/theme/app_theme.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -35,13 +37,7 @@ class HabitTrackerApp extends ConsumerWidget {
     return MaterialApp(
       title: 'Habit Tracker',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF6366F1),
-          brightness: Brightness.dark,
-        ),
-        useMaterial3: true,
-      ),
+      theme: AppTheme.darkTheme,
       home: const Scaffold(
         body: Center(
           child: Column(
@@ -50,7 +46,7 @@ class HabitTrackerApp extends ConsumerWidget {
               Icon(
                 Icons.check_circle_outline,
                 size: 64,
-                color: Color(0xFF6366F1),
+                color: AppColors.blue,
               ),
               SizedBox(height: 16),
               Text(
