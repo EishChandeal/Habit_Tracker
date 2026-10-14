@@ -319,6 +319,7 @@ class InsightsScreen extends ConsumerWidget {
     WidgetRef ref,
     HabitDto habit,
   ) {
+    final habitColor = HabitVisuals.parseColor(habit.colorHex);
     final streakAsync = ref.watch(habitStreakProvider(habit.id));
     final now = DateTime.now();
     final todayUtc = DateTime.utc(now.year, now.month, now.day);
@@ -331,15 +332,25 @@ class InsightsScreen extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: Color.alphaBlend(habitColor.withValues(alpha: 0.04), AppColors.surface),
           borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: habitColor.withValues(alpha: 0.18),
+            width: 1,
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Habit header: title & tracking type
+            // Habit header: icon, title & tracking type
             Row(
               children: [
+                Icon(
+                  HabitVisuals.getIcon(habit.iconName),
+                  size: 18,
+                  color: habitColor,
+                ),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     habit.name,
@@ -408,10 +419,10 @@ class InsightsScreen extends ConsumerWidget {
                     final percent = (s.completionRate * 100).toStringAsFixed(0);
                     return Text(
                       '$percent% completion',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.blue,
+                        color: habitColor,
                         fontFamily: AppTheme.fontPrimary,
                       ),
                     );
@@ -432,7 +443,7 @@ class InsightsScreen extends ConsumerWidget {
                   child: LinearProgressIndicator(
                     value: s.completionRate.clamp(0.0, 1.0),
                     backgroundColor: AppColors.background,
-                    color: AppColors.blue,
+                    color: habitColor,
                     minHeight: 6,
                   ),
                 );

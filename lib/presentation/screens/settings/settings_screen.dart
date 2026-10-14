@@ -43,7 +43,11 @@ class SettingsScreen extends StatelessWidget {
               title: 'Insights & Analytics',
               subtitle: 'Weekly consistency, metrics, and completion trends',
               onTap: () {
-                appNavigateTo(context, AppRoutes.insights, const InsightsScreen());
+                appNavigateTo(
+                  context,
+                  AppRoutes.insights,
+                  const InsightsScreen(),
+                );
               },
             ),
             const SizedBox(height: 8),
@@ -53,7 +57,11 @@ class SettingsScreen extends StatelessWidget {
               title: 'History Log',
               subtitle: 'Inspect and edit entries from earlier dates',
               onTap: () {
-                appNavigateTo(context, AppRoutes.history, const HistoryScreen());
+                appNavigateTo(
+                  context,
+                  AppRoutes.history,
+                  const HistoryScreen(),
+                );
               },
             ),
             const SizedBox(height: 8),
@@ -141,7 +149,7 @@ class SettingsScreen extends StatelessWidget {
                   ),
                   SizedBox(height: 6),
                   Text(
-                    'Milestone: Working Multi-Screen Prototype (Oct 16 Presentation)\n'
+                    'This is a Working Multi-Screen Prototype\n'
                     'Architecture: Clean Architecture + ObjectBox Offline-First + Riverpod 2.0\n'
                     'Target Device Frame: 412 × 917 (Android Compact Frame)',
                     style: TextStyle(
@@ -278,7 +286,9 @@ class SettingsScreen extends StatelessWidget {
   void _handleExport(BuildContext context, String format) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Exporting habit records to $format format... (Prototype stub)'),
+        content: Text(
+          'Exporting habit records to $format format... (Prototype stub)',
+        ),
         backgroundColor: AppColors.surface,
         duration: const Duration(seconds: 2),
       ),

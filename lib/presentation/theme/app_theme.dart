@@ -155,3 +155,62 @@ class AppTheme {
     );
   }
 }
+
+/// Helper utilities for habit visual representation (colors and icons).
+class HabitVisuals {
+  HabitVisuals._();
+
+  /// Parse a color from hex string, defaulting to [AppColors.blue].
+  static Color parseColor(String? hexString, [Color fallback = AppColors.blue]) {
+    if (hexString == null || hexString.isEmpty) return fallback;
+    try {
+      final clean = hexString.replaceAll('#', '').trim();
+      if (clean.length == 6) {
+        return Color(int.parse('FF$clean', radix: 16));
+      } else if (clean.length == 8) {
+        return Color(int.parse(clean, radix: 16));
+      }
+    } catch (_) {}
+    return fallback;
+  }
+
+  /// Get appropriate high-contrast foreground color on top of a fill color.
+  static Color getOnColor(Color color) {
+    return color.computeLuminance() > 0.4 ? const Color(0xFF0F1115) : Colors.white;
+  }
+
+  /// Map an icon string identifier to its corresponding [IconData].
+  static IconData getIcon(String? iconName) {
+    switch (iconName) {
+      case 'fitness':
+      case 'fitness_center':
+        return Icons.fitness_center;
+      case 'run':
+      case 'directions_run':
+        return Icons.directions_run;
+      case 'water':
+      case 'water_drop':
+      case 'water_drop_outlined':
+        return Icons.water_drop_outlined;
+      case 'book':
+      case 'menu_book':
+      case 'menu_book_outlined':
+        return Icons.menu_book_outlined;
+      case 'meditation':
+      case 'self_improvement':
+        return Icons.self_improvement;
+      case 'sleep':
+      case 'bedtime':
+      case 'bedtime_outlined':
+        return Icons.bedtime_outlined;
+      case 'code':
+        return Icons.code;
+      case 'check':
+      case 'check_circle':
+      case 'check_circle_outline':
+      default:
+        return Icons.check_circle_outline;
+    }
+  }
+}
+

@@ -11,9 +11,9 @@
 
 ## Current status
 
-- Overall: Backend ready; TASK-01 through TASK-06 complete; user verified Windows desktop smoke test passed; TASK-11 (Selection mode, Edit, and Delete functionality) complete.
-- Last updated: 2026-10-14 10:40 IST
-- Current branch/commit: `overman` / `d4d8578`
+- Overall: Backend ready; TASK-01 through TASK-06 complete; user verified Windows desktop smoke test passed; TASK-11 (Edit & Delete) complete; Custom habit color & icon integration across cards and panels complete.
+- Last updated: 2026-10-14 11:15 IST
+- Current branch/commit: `overman`
 - Target device/emulator: Windows desktop & Android compact frame (412×917)
 - App launches: Verified on Windows desktop by user & verified via widget tests (81/81 tests passing)
 
@@ -27,6 +27,7 @@
 - [ ] Add one-off task (intentionally skipped per user directive; deferred to a later step)
 - [x] Checkmark completion (implemented via reactive `EntryActions.logEntry/deleteEntry` in `HomeScreen`)
 - [x] Numeric value logging (implemented via bottom sheet in `HomeScreen`)
+- [x] Custom habit color accenting & icon badge rendering across HabitCard, Heatmap, Statistics, Trend Graph, History, and Insights
 - [x] Expanded habit card
 - [x] Heatmap panel
 - [x] Statistics panel
@@ -46,40 +47,35 @@
 
 ## Latest completed task
 
-**Task ID:** TASK-11 — Long-press selection mode, Edit & Delete functionality
+**Task ID:** TASK-12 — Custom Habit Color & Icon Rendering
 
 - Implemented:
-  - `lib/presentation/screens/home/home_screen.dart`:
-    - Converted `HomeScreen` to `ConsumerStatefulWidget` maintaining selection state (`_selectedHabitStatus`).
-    - Added `_buildSelectionHeaderRow`: transforms top header (height 88) into Deselect / Selected Habit Info (`1 selected`), Edit action, and Delete action buttons.
-    - Wrapped layout in `GestureDetector(behavior: HitTestBehavior.translucent)` so tapping outside cards exits selection mode cleanly.
-    - Tapping close icon or selected info card exits selection mode.
-    - Implemented `_confirmDelete`: displays `AlertDialog` with red Delete confirmation action; permanently removes habit and cascades deletions across entries, schedules, and limits via `HabitRepository.deleteHabit`; invalidates providers and clears selection.
-    - Implemented `_editHabit`: opens `AddHabitScreen` with pre-filled habit and active schedule; clears selection upon return.
-  - `lib/presentation/screens/add/add_habit_screen.dart`:
-    - Added `habitToEdit` and `scheduleToEdit` parameters to constructor.
-    - Prepopulates name, habit type, unit, target value, color hex, icon name, and schedule settings in `initState`.
-    - Updates `_saveHabit()` to branch between creation (`createHabit`) and editing (`updateHabit` and `setSchedule`).
-    - Displays dynamic title ("Edit Habit" vs "New Habit") and submit label ("Save Changes" vs "Create Habit").
+  - `lib/presentation/theme/app_theme.dart`:
+    - Added `HabitVisuals` utility class with hex string parsing (`parseColor`), dynamic high-contrast foreground color calculation (`getOnColor`), and string-to-IconData resolution (`getIcon`).
   - `lib/presentation/widgets/habit_card.dart`:
-    - Added `isSelected`, `onEdit`, `onDelete` properties.
-    - Highlights selected card with orange border (`side: BorderSide(color: AppColors.orange, width: 2)`).
-    - Forwards `onEdit` and `onDelete` to `DetailsPanel`.
-  - `lib/presentation/widgets/details_panel.dart`:
-    - Added direct "Edit" and "Delete" OutlinedButtons in expanded habit details panel for direct action without entering selection mode.
-  - `test/widget_test.dart`:
-    - Added test for entering selection mode on long-press and exiting via cancel.
-    - Added test for edit flow: prepopulating form, editing name, saving, and verifying updated name on home screen.
-    - Added test for delete flow: confirmation dialog, deleting habit, verifying removal and snackbar notification.
-    - Added test for direct Edit and Delete buttons on expanded habit `DetailsPanel`.
+    - Dedicated habit icon badge container rendered in `habitColor`.
+    - Subtle container surface tint (`Color.alphaBlend(habitColor.withValues(alpha: 0.05), AppColors.surface)`) and colored border (`habitColor.withValues(alpha: 0.22)`).
+    - Left-edge accent bar glows with `habitColor`.
+    - Checkmark and numeric completion controls fill with `habitColor` when completed, with luminance-contrasting checkmark/number text.
+    - Expanded circular panel dots color-coordinate with `habitColor`.
+  - `lib/presentation/widgets/heatmap_panel.dart`:
+    - Day status cells (`met`, `exceeded`) and active legend indicator dynamically adapt to `habitColor`.
+  - `lib/presentation/widgets/numeric_graph_panel.dart`:
+    - Trend bar charts, target goal line labels, and bar values dynamically adopt `habitColor`.
+  - `lib/presentation/widgets/statistics_panel.dart`:
+    - Stat summary tiles (completion rate, average value, consistency) coordinate with `habitColor`.
+  - `lib/presentation/screens/history/history_screen.dart` & `lib/presentation/screens/insights/insights_screen.dart`:
+    - Habit items display the chosen icon badge and color tints in past logs and insight progress bars.
 - Files changed:
-  - `lib/presentation/screens/home/home_screen.dart` (modified)
-  - `lib/presentation/screens/add/add_habit_screen.dart` (modified)
+  - `lib/presentation/theme/app_theme.dart` (modified)
   - `lib/presentation/widgets/habit_card.dart` (modified)
-  - `lib/presentation/widgets/details_panel.dart` (modified)
-  - `test/widget_test.dart` (modified)
+  - `lib/presentation/widgets/heatmap_panel.dart` (modified)
+  - `lib/presentation/widgets/numeric_graph_panel.dart` (modified)
+  - `lib/presentation/widgets/statistics_panel.dart` (modified)
+  - `lib/presentation/screens/history/history_screen.dart` (modified)
+  - `lib/presentation/screens/insights/insights_screen.dart` (modified)
 - Tests/checks run:
-  - `flutter analyze lib/` → ✅ `No issues found! (ran in 6.3s)`
+  - `flutter analyze lib/` → ✅ `No issues found! (ran in 21.4s)`
   - `flutter test` → ✅ `All tests passed! (81/81 passed)`
 - Observed result:
   - Zero analysis issues in `lib/`.
@@ -89,10 +85,11 @@
 
 ## Current task
 
-**Task ID:** TASK-12 — Prototype polish & optional one-off tasks
+**Task ID:** TASK-13 — Prototype polish & optional one-off tasks
 
 - Goal: Polish UI interactions and add one-off tasks when user is ready.
 - Acceptance criteria:
+  - Codebase remains clean with 0 analysis issues and passing tests.
   - Codebase remains clean with 0 analysis issues and passing tests.
 
 ## Remaining work --- ordered by priority

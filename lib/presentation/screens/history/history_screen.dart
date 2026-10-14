@@ -298,11 +298,13 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
           final entry = entryMap[habit.id];
           final isCompleted = entry != null && entry.value > 0;
           final isNumeric = habit.type == HabitType.numeric;
+          final habitColor = HabitVisuals.parseColor(habit.colorHex);
+          final onHabitColor = HabitVisuals.getOnColor(habitColor);
 
           return Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: Material(
-              color: AppColors.surface,
+              color: Color.alphaBlend(habitColor.withValues(alpha: 0.04), AppColors.surface),
               borderRadius: BorderRadius.circular(14),
               child: Container(
                 padding: const EdgeInsets.all(14),
@@ -313,8 +315,24 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                       width: 4,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: isCompleted ? AppColors.blue : AppColors.mutedGrey,
+                        color: isCompleted ? habitColor : habitColor.withValues(alpha: 0.35),
                         borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+
+                    // Habit icon badge
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: habitColor.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        HabitVisuals.getIcon(habit.iconName),
+                        color: habitColor,
+                        size: 20,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -340,7 +358,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                                 : (isCompleted ? 'Completed' : 'Not logged'),
                             style: TextStyle(
                               fontSize: 12,
-                              color: isCompleted ? AppColors.blue : AppColors.mutedGrey,
+                              color: isCompleted ? habitColor : AppColors.mutedGrey,
                               fontFamily: AppTheme.fontPrimary,
                             ),
                           ),
@@ -352,7 +370,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
 
                     // Interactive Completion Control for this past date
                     Material(
-                      color: isCompleted ? AppColors.blue : AppColors.background,
+                      color: isCompleted ? habitColor : AppColors.background,
                       borderRadius: BorderRadius.circular(12),
                       child: InkWell(
                         borderRadius: BorderRadius.circular(12),
@@ -368,14 +386,14 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                                     fontSize: 13,
                                     fontWeight: FontWeight.bold,
                                     color: isCompleted
-                                        ? AppColors.controlText
+                                        ? onHabitColor
                                         : AppColors.mutedGrey,
                                   ),
                                 )
                               : Icon(
                                   isCompleted ? Icons.check : Icons.remove,
                                   color: isCompleted
-                                      ? AppColors.controlText
+                                      ? onHabitColor
                                       : AppColors.mutedGrey,
                                   size: 22,
                                 ),

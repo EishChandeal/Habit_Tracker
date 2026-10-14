@@ -82,17 +82,18 @@ class _HabitCardState extends ConsumerState<HabitCard> {
     final habit = widget.item.habit;
     final entry = widget.item.entry;
     final streakAsync = ref.watch(habitStreakProvider(habit.id));
+    final habitColor = HabitVisuals.parseColor(habit.colorHex);
 
-    // Accent color on the left edge: blue if completed, muted grey otherwise
-    final accentColor = _isCompleted ? AppColors.blue : AppColors.mutedGrey;
+    // Accent color on the left edge: habit color if completed, subtle tint otherwise
+    final accentColor = _isCompleted ? habitColor : habitColor.withValues(alpha: 0.35);
 
     return Material(
-      color: AppColors.surface,
+      color: Color.alphaBlend(habitColor.withValues(alpha: 0.05), AppColors.surface),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: widget.isSelected
             ? const BorderSide(color: AppColors.orange, width: 2)
-            : BorderSide.none,
+            : BorderSide(color: habitColor.withValues(alpha: 0.22), width: 1),
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -117,7 +118,29 @@ class _HabitCardState extends ConsumerState<HabitCard> {
                         width: 5,
                         color: accentColor,
                       ),
-                      const SizedBox(width: 14),
+                      const SizedBox(width: 12),
+
+                      // Habit Icon Badge in selected habit color
+                      Center(
+                        child: Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: habitColor.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: habitColor.withValues(alpha: 0.35),
+                              width: 1,
+                            ),
+                          ),
+                          child: Icon(
+                            HabitVisuals.getIcon(habit.iconName),
+                            color: habitColor,
+                            size: 22,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
 
                       // Habit details (Title, schedule/streak, target)
                       Expanded(
@@ -165,7 +188,7 @@ class _HabitCardState extends ConsumerState<HabitCard> {
                       Padding(
                         padding: const EdgeInsets.all(12),
                         child: Center(
-                          child: _buildCompletionControl(context, habit, entry),
+                          child: _buildCompletionControl(context, habit, entry, habitColor),
                         ),
                       ),
                     ],
@@ -177,7 +200,7 @@ class _HabitCardState extends ConsumerState<HabitCard> {
                   const Divider(color: AppColors.background, height: 1),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                    child: _buildExpandedSection(context),
+                    child: _buildExpandedSection(context, habitColor),
                   ),
                 ],
               ],
@@ -188,7 +211,7 @@ class _HabitCardState extends ConsumerState<HabitCard> {
     );
   }
 
-  Widget _buildExpandedSection(BuildContext context) {
+  Widget _buildExpandedSection(BuildContext context, Color habitColor) {
     final titles = _panelTitles;
     final currentTitle = titles[_activePanelIndex];
 
@@ -242,7 +265,7 @@ class _HabitCardState extends ConsumerState<HabitCard> {
                         width: isActive ? 12 : 5,
                         height: 5,
                         decoration: BoxDecoration(
-                          color: isActive ? AppColors.blue : AppColors.mutedGrey.withValues(alpha: 0.3),
+                          color: isActive ? habitColor : AppColors.mutedGrey.withValues(alpha: 0.3),
                           borderRadius: BorderRadius.circular(3),
                         ),
                       );
@@ -268,7 +291,7 @@ class _HabitCardState extends ConsumerState<HabitCard> {
             duration: const Duration(milliseconds: 200),
             child: KeyedSubtree(
               key: ValueKey<int>(_activePanelIndex),
-              child: _buildPanelContent(),
+              child: _buildPanelContent(habitColor),
             ),
           ),
         ],
@@ -276,13 +299,16 @@ class _HabitCardState extends ConsumerState<HabitCard> {
     );
   }
 
-  Widget _buildPanelContent() {
+  Widget _buildPanelContent(Color habitColor) {
     final habit = widget.item.habit;
     final isNumeric = habit.type == HabitType.numeric;
 
     if (_activePanelIndex == 0) {
       // 0: Heatmap (always first)
-      return HeatmapPanel(habitId: habit.id);
+      return HeatmapPanel(
+        habitId: habit.id,
+        habitColor: habitColor,
+      );
     } else if (_activePanelIndex == 1) {
       // 1: Statistics
       return StatisticsPanel(habit: habit);
@@ -368,8 +394,10 @@ class _HabitCardState extends ConsumerState<HabitCard> {
     BuildContext context,
     dynamic habit,
     dynamic entry,
+    Color habitColor,
   ) {
     const double controlSize = 72;
+    final onHabitColor = HabitVisuals.getOnColor(habitColor);
 
     if (habit.type == HabitType.boolean) {
       final isDone = _isCompleted;
@@ -377,7 +405,7 @@ class _HabitCardState extends ConsumerState<HabitCard> {
         button: true,
         label: isDone ? 'Mark habit as incomplete' : 'Mark habit as complete',
         child: Material(
-          color: isDone ? AppColors.blue : AppColors.background,
+          color: isDone ? habitColor : AppColors.background,
           borderRadius: BorderRadius.circular(14),
           child: InkWell(
             onTap: widget.onCompletionTap,
@@ -390,21 +418,21 @@ class _HabitCardState extends ConsumerState<HabitCard> {
                 border: isDone
                     ? null
                     : Border.all(
-                        color: AppColors.mutedGrey.withValues(alpha: 0.3),
+                        color: habitColor.withValues(alpha: 0.35),
                         width: 1.5,
                       ),
               ),
               child: Center(
                 child: isDone
-                    ? const Icon(
+                    ? Icon(
                         Icons.check,
-                        color: AppColors.controlText,
+                        color: onHabitColor,
                         size: 32,
                       )
-                    : const Text(
+                    : Text(
                         '—',
                         style: TextStyle(
-                          color: AppColors.mutedGrey,
+                          color: habitColor.withValues(alpha: 0.7),
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
                         ),
@@ -424,7 +452,7 @@ class _HabitCardState extends ConsumerState<HabitCard> {
         label: hasValue ? 'Logged ${entry.value}' : 'Log numeric value',
         child: Material(
           color: isDone
-              ? AppColors.blue
+              ? habitColor
               : (hasValue ? AppColors.surface : AppColors.background),
           borderRadius: BorderRadius.circular(14),
           child: InkWell(
@@ -438,10 +466,10 @@ class _HabitCardState extends ConsumerState<HabitCard> {
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
                   color: isDone
-                      ? AppColors.blue
+                      ? habitColor
                       : (hasValue
-                          ? AppColors.blue.withValues(alpha: 0.5)
-                          : AppColors.mutedGrey.withValues(alpha: 0.3)),
+                          ? habitColor.withValues(alpha: 0.7)
+                          : habitColor.withValues(alpha: 0.35)),
                   width: 1.5,
                 ),
               ),
@@ -454,7 +482,7 @@ class _HabitCardState extends ConsumerState<HabitCard> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: isDone ? AppColors.controlText : AppColors.primaryText,
+                        color: isDone ? onHabitColor : habitColor,
                         fontFamily: AppTheme.fontPrimary,
                       ),
                       maxLines: 1,
@@ -466,7 +494,7 @@ class _HabitCardState extends ConsumerState<HabitCard> {
                         style: TextStyle(
                           fontSize: 11,
                           color: isDone
-                              ? AppColors.controlText.withValues(alpha: 0.8)
+                              ? onHabitColor.withValues(alpha: 0.85)
                               : AppColors.mutedGrey,
                           fontFamily: AppTheme.fontPrimary,
                         ),
@@ -474,10 +502,10 @@ class _HabitCardState extends ConsumerState<HabitCard> {
                         overflow: TextOverflow.ellipsis,
                       ),
                   ] else ...[
-                    const Text(
+                    Text(
                       '—',
                       style: TextStyle(
-                        color: AppColors.mutedGrey,
+                        color: habitColor.withValues(alpha: 0.7),
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),

@@ -45,6 +45,7 @@ class StatisticsPanel extends ConsumerWidget {
   }
 
   Widget _buildContent(BuildContext context, StatisticsResult stats) {
+    final habitColor = HabitVisuals.parseColor(habit.colorHex);
     final ratePercent = (stats.completionRate * 100).toStringAsFixed(0);
 
     return Column(
@@ -58,7 +59,7 @@ class StatisticsPanel extends ConsumerWidget {
                 title: 'Completion Rate',
                 value: '$ratePercent%',
                 icon: Icons.pie_chart_outline,
-                accentColor: AppColors.blue,
+                accentColor: habitColor,
               ),
             ),
             const SizedBox(width: 10),
@@ -94,13 +95,13 @@ class StatisticsPanel extends ConsumerWidget {
                       value: _formatVal(stats.average),
                       subtitle: habit.unit,
                       icon: Icons.analytics_outlined,
-                      accentColor: AppColors.blue,
+                      accentColor: habitColor,
                     )
                   : _buildStatTile(
                       title: 'Consistency',
                       value: stats.totalTrackedDays > 0 ? 'Active' : 'New',
                       icon: Icons.trending_up,
-                      accentColor: AppColors.blue,
+                      accentColor: habitColor,
                     ),
             ),
           ],

@@ -8,8 +8,13 @@ import 'package:habit_tracker/presentation/theme/app_theme.dart';
 /// Panel displaying the heatmap grid and streak summary for a habit.
 class HeatmapPanel extends ConsumerWidget {
   final String habitId;
+  final Color? habitColor;
 
-  const HeatmapPanel({super.key, required this.habitId});
+  const HeatmapPanel({
+    super.key,
+    required this.habitId,
+    this.habitColor,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -204,14 +209,16 @@ class HeatmapPanel extends ConsumerWidget {
   Widget _buildDayCell(DateTime day, DayStatus status, bool isToday) {
     Color cellColor;
     Border? border;
+    final activeColor = habitColor ?? AppColors.blue;
+    final onActiveColor = HabitVisuals.getOnColor(activeColor);
 
     switch (status) {
       case DayStatus.met:
       case DayStatus.exceeded:
-        cellColor = AppColors.blue;
+        cellColor = activeColor;
         break;
       case DayStatus.partiallyMet:
-        cellColor = AppColors.blue.withValues(alpha: 0.5);
+        cellColor = activeColor.withValues(alpha: 0.5);
         break;
       case DayStatus.missed:
         cellColor = const Color(0xFF232732);
@@ -251,7 +258,7 @@ class HeatmapPanel extends ConsumerWidget {
               fontSize: 10,
               fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
               color: status == DayStatus.met || status == DayStatus.exceeded
-                  ? AppColors.controlText
+                  ? onActiveColor
                   : AppColors.mutedGrey,
             ),
           ),
@@ -261,10 +268,11 @@ class HeatmapPanel extends ConsumerWidget {
   }
 
   Widget _buildLegend() {
+    final activeColor = habitColor ?? AppColors.blue;
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        _buildLegendItem(AppColors.blue, 'Met'),
+        _buildLegendItem(activeColor, 'Met'),
         const SizedBox(width: 14),
         _buildLegendItem(const Color(0xFF232732), 'Missed', hasBorder: true),
         const SizedBox(width: 14),

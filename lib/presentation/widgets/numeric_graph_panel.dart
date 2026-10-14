@@ -40,6 +40,7 @@ class NumericGraphPanel extends ConsumerWidget {
   }
 
   Widget _buildGraph(BuildContext context, List<HabitEntryDto> entries) {
+    final habitColor = HabitVisuals.parseColor(habit.colorHex);
     final now = DateTime.now();
     final todayUtc = DateTime.utc(now.year, now.month, now.day);
 
@@ -92,9 +93,9 @@ class NumericGraphPanel extends ConsumerWidget {
                   child: Text(
                     'Daily Goal: ${_formatVal(habit.targetValue!)} ${habit.unit ?? ''}',
                     textAlign: TextAlign.end,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
-                      color: AppColors.orange,
+                      color: habitColor,
                       fontWeight: FontWeight.w600,
                       fontFamily: AppTheme.fontPrimary,
                     ),
@@ -140,7 +141,7 @@ class NumericGraphPanel extends ConsumerWidget {
                           style: TextStyle(
                             fontSize: 9,
                             fontWeight: FontWeight.bold,
-                            color: isTargetMet ? AppColors.blue : AppColors.mutedGrey,
+                            color: isTargetMet ? habitColor : AppColors.mutedGrey,
                           ),
                           maxLines: 1,
                         )
@@ -157,8 +158,8 @@ class NumericGraphPanel extends ConsumerWidget {
                             decoration: BoxDecoration(
                               color: val > 0
                                   ? (isTargetMet
-                                      ? AppColors.blue
-                                      : AppColors.blue.withValues(alpha: 0.45))
+                                      ? habitColor
+                                      : habitColor.withValues(alpha: 0.45))
                                   : AppColors.surface,
                               borderRadius: BorderRadius.circular(5),
                               border: isToday
