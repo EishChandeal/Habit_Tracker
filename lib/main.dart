@@ -5,7 +5,7 @@ import 'package:habit_tracker/data/database/app_database.dart';
 import 'package:habit_tracker/application/providers/providers.dart';
 
 import 'package:habit_tracker/presentation/theme/app_theme.dart';
-import 'package:habit_tracker/presentation/screens/home/home_screen.dart';
+import 'package:habit_tracker/presentation/navigation/app_router.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,11 +35,11 @@ class HabitTrackerApp extends ConsumerWidget {
     // are observed for the lifetime of the application.
     ref.watch(dayChangeControllerProvider);
 
-    return MaterialApp(
+    return MaterialApp.router(
       title: 'Habit Tracker',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
-      home: const HomeScreen(),
+      routerConfig: appRouter,
     );
   }
 }

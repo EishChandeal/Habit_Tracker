@@ -12,11 +12,11 @@ presentation.
 
 ## Current status
 
-- Overall: Backend ready; TASK-01 (theme & tokens), TASK-02 (Home screen & habit card), TASK-03 (Add Habit screen for boolean & numeric habits), and TASK-05 (expanded habit card with circular panels: Heatmap, Statistics, Trend Graph, and Details) complete.
-- Last updated: 2026-10-14 09:30 IST
+- Overall: Backend ready; TASK-01 (theme & tokens), TASK-02 (Home screen & habit card), TASK-03 (Add Habit screen), TASK-05 (expanded habit card with circular panels), and TASK-06 (wired navigation, History, Insights, and Settings screens) complete.
+- Last updated: 2026-10-14 09:55 IST
 - Current branch/commit: `overman` / `d4d8578`
 - Target device/emulator: Windows desktop & Android compact frame (412×917)
-- App launches: ✅ Verified via widget testing and app compilation (`HomeScreen`, `AddHabitScreen`, and expanded `HabitCard` active)
+- App launches: ✅ Verified via widget testing and app compilation (`HomeScreen`, `AddHabitScreen`, `HistoryScreen`, `InsightsScreen`, and `SettingsScreen` active)
 
 ## Working features
 
@@ -35,70 +35,70 @@ presentation.
 - [x] Circular swipe/arrow navigation
 - [ ] Edit habit
 - [ ] Delete habit with confirmation
-- [ ] History screen
-- [ ] Insights screen
-- [ ] Settings screen
-- [ ] CSV export
-- [ ] JSON export
-- [ ] XLSX export
+- [x] History screen (scrollable 30-day past calendar strip, per-date entries, and interactive historical logging)
+- [x] Insights screen (high-level metrics overview, weekly activity chart, and per-habit performance bars)
+- [x] Settings screen (navigation shortcuts, prototype export triggers, preferences, and about card)
+- [x] CSV export (prototype UI trigger with feedback)
+- [x] JSON export (prototype UI trigger with feedback)
+- [x] XLSX export (prototype UI trigger with feedback)
 - [ ] Final demonstration walkthrough
 
 ## Latest completed task
 
-**Task ID:** TASK-05 — Expanded habit card with Heatmap, Statistics, Trend Graph, and Details panels
+**Task ID:** TASK-06 — Wire navigation and remaining prototype screens (History, Insights, Settings)
 - Implemented:
-  - Created `lib/presentation/widgets/heatmap_panel.dart`:
-    - Responsive streak badges (`currentStreak`, `longestStreak`).
-    - 28-day (4-week) Monday–Sunday calendar grid styled according to `DayStatus`.
-    - Distinct today-indicator (orange border), future day handling, and color legend.
-  - Created `lib/presentation/widgets/statistics_panel.dart`:
-    - 365-day range metrics computed via `habitStatisticsProvider`.
-    - Displays completion rate percentage, completed days, missed days, and habit consistency.
-    - For numeric habits: displays daily average, best record, and total logged sum with units.
-    - Responsive layout preventing RenderFlex overflows on narrow frames.
-  - Created `lib/presentation/widgets/numeric_graph_panel.dart`:
-    - 7-day trend bar graph consuming `habitEntriesProvider` for numeric habits only.
-    - Displays proportional bar heights, target goal line indicator, and weekday labels.
-  - Created `lib/presentation/widgets/details_panel.dart`:
-    - Displays habit start date (`createdAt`), schedule display name, tracking type, and numeric targets.
-    - Flexible row layout with truncation for compact viewports.
-  - Updated `lib/presentation/widgets/habit_card.dart`:
-    - Converted to `ConsumerStatefulWidget` managing in-place animated expansion via `AnimatedSize`.
-    - Circular panel carousel header with `< [PANEL NAME] >` previous/next navigation and dot indicators.
-    - Added horizontal swipe gesture navigation (`onHorizontalDragEnd`).
-    - Sequence for boolean habits: `Heatmap → Statistics → Details → Heatmap`.
-    - Sequence for numeric habits: `Heatmap → Statistics → Trend Graph → Details → Heatmap`.
-    - Design requirement: Reopening a collapsed card always resets active panel to Heatmap.
-    - Completion action button taps isolated from card expansion.
+  - Created `lib/presentation/navigation/app_router.dart`:
+    - Defined central `AppRoutes` (`/`, `/add`, `/history`, `/insights`, `/settings`).
+    - Configured declarative `GoRouter` instance (`appRouter`).
+    - Added `appNavigateTo` helper ensuring compatibility with both GoRouter and standalone Navigator tests.
+  - Created `lib/presentation/screens/history/history_screen.dart`:
+    - 30-day horizontal date strip in reverse chronological order (Today, Yesterday, ...).
+    - Summary banner showing recorded habits count for the selected date.
+    - Habit list with reactive entry states (completed checkmark vs not logged, numeric logged vs target).
+    - Interactive entry logging/editing on past dates via `EntryActions` (boolean toggle and numeric bottom sheet).
+    - Header shortcut button directly to InsightsScreen.
+  - Created `lib/presentation/screens/insights/insights_screen.dart`:
+    - High-level metric cards: Active Habits, Data Engine, Target Frame, Status.
+    - Weekly activity chart displaying the current 7-day Monday–Sunday timeline.
+    - Per-habit breakdown list showing streaks, completion percentage, and linear progress bars.
+  - Created `lib/presentation/screens/settings/settings_screen.dart`:
+    - Navigation shortcuts to Insights, History, and Add Habit.
+    - Prototype export actions (CSV, JSON, XLSX) with feedback snackbars.
+    - Preferences summary (Dark theme, Monday first day, Midnight day-change reset).
+    - About card detailing Overman_V0 prototype specs and target frame.
   - Updated `lib/presentation/screens/home/home_screen.dart`:
-    - Removed placeholder tap snackbar so in-place expansion handles card tap cleanly.
+    - Wired History / Date button in header to push `HistoryScreen`.
+    - Wired Add button in header to push `AddHabitScreen`.
+    - Wired Settings button in header to push `SettingsScreen`.
+  - Updated `lib/main.dart`:
+    - Switched `MaterialApp` to `MaterialApp.router` using `appRouter`.
   - Updated `test/widget_test.dart`:
-    - Added test for in-place card expansion, heatmap rendering, circular navigation, and reopen reset.
-    - Added test for numeric habit panel sequence including the 7-day trend graph.
-    - Configured ObjectBox store in widget test harness.
+    - Added tests for navigating to `HistoryScreen` and back.
+    - Added tests for navigating to `SettingsScreen`, triggering export, visiting `InsightsScreen`, and popping back.
+    - Added test for opening `InsightsScreen` from `HistoryScreen` header action.
 - Files changed:
-  - `lib/presentation/widgets/heatmap_panel.dart` (new)
-  - `lib/presentation/widgets/statistics_panel.dart` (new)
-  - `lib/presentation/widgets/numeric_graph_panel.dart` (new)
-  - `lib/presentation/widgets/details_panel.dart` (new)
-  - `lib/presentation/widgets/habit_card.dart` (modified)
+  - `lib/presentation/navigation/app_router.dart` (new)
+  - `lib/presentation/screens/history/history_screen.dart` (new)
+  - `lib/presentation/screens/insights/insights_screen.dart` (new)
+  - `lib/presentation/screens/settings/settings_screen.dart` (new)
   - `lib/presentation/screens/home/home_screen.dart` (modified)
+  - `lib/main.dart` (modified)
   - `test/widget_test.dart` (modified)
 - Tests/checks run:
-  - `flutter analyze lib/` → ✅ `No issues found! (ran in 10.6s)`
-  - `flutter test` → ✅ `All tests passed! (74/74 passed)`
+  - `flutter analyze lib/` → ✅ `No issues found! (ran in 9.2s)`
+  - `flutter test` → ✅ `All tests passed! (77/77 passed)`
 - Observed result:
   - Zero analysis issues in `lib/`.
-  - All 74 tests pass across data, domain, repository, and widget suites.
+  - All 77 tests pass across data, domain, repository, and widget suites.
 - Known limitations:
-  - One-off tasks omitted from Add screen as requested.
+  - One-off tasks omitted from Add screen as previously requested.
 
 ## Current task
 
-**Task ID:** TASK-06 — Wire navigation and remaining prototype screens
-- Goal: Wire navigation to remaining prototype screens (History, Insights, Settings placeholders/views).
+**Task ID:** TASK-07 — End-to-end smoke run and demonstration verification
+- Goal: Perform end-to-end smoke verification on target frame and verify full demonstration flow.
 - Acceptance criteria:
-  - Navigation controls on HomeScreen (History button in header, Settings button in header) navigate to functional or prototype stub screens.
+  - All screens navigate seamlessly.
   - `flutter analyze lib/` reports 0 issues.
   - `flutter test` passes.
 
@@ -110,14 +110,14 @@ presentation.
 - [x] TASK-02: Home screen shell + habit card widget (consumes `todayDashboardProvider`)
 - [x] TASK-03: Add Habit screen (boolean and numeric habits)
 - [x] TASK-05: Expanded habit card — heatmap + statistics panels + circular navigation
-- [ ] TASK-06: Wire navigation (GoRouter or Navigator push to remaining screens)
+- [x] TASK-06: Wire navigation (GoRouter & Navigator push to History, Insights, Settings)
 - [ ] TASK-07: End-to-end smoke run on emulator/device
 
 ### P1 --- Valuable if time allows
 
-- [ ] TASK-08: History screen (scrollable dates, `getEntriesForDate`)
-- [ ] TASK-09: Insights screen (weekly averages chart, completion tiles)
-- [ ] TASK-10: Settings screen (navigation placeholder + export stub)
+- [x] TASK-08: History screen (scrollable dates, `getEntriesForDate` completed in TASK-06)
+- [x] TASK-09: Insights screen (weekly activity chart, completion tiles completed in TASK-06)
+- [x] TASK-10: Settings screen (navigation shortcuts + export stubs completed in TASK-06)
 - [ ] TASK-11: Long-press selection mode → Edit/Delete
 - [ ] Add one-off task support (when user is ready)
 
@@ -127,7 +127,6 @@ presentation.
 - [ ] Remote AI backend
 - [ ] Predictive modelling
 - [ ] Cloud sync
-- [ ] Export (CSV/JSON/XLSX)
 - [ ] Nonessential animations and polish
 
 ## Known bugs / blockers
@@ -135,13 +134,13 @@ presentation.
 | Issue | Severity | Reproduction steps | Next action |
 |---|---|---|---|
 | One-off task addition skipped | MEDIUM | Intentionally deferred | Add one-off tasks when user directs |
-| `go_router` unused | LOW | Grep `lib/` for `go_router` | Wire in TASK-06 |
 | 37 `avoid_print` lint infos | LOW | `flutter analyze` | In test/tool files only; ignore for prototype |
 
 ## Decisions made
 
 | Date | Decision | Reason |
 |---|---|---|
+| 2026-10-14 | Implement GoRouter with fallback helper | Allows declarative routing while keeping widget test suites completely robust |
 | 2026-10-14 | Reset active panel to Heatmap on card reopen | Conforms with user design specification |
 | 2026-10-14 | Omit trend graph for boolean habits | Trend graphs are only applicable to numeric tracking |
 | 2026-10-14 | Skip one-off tasks in TASK-03 | Explicit user directive ("skip the addition of 'one-off tasks' on this step") |
@@ -151,7 +150,7 @@ presentation.
 
 ## Next action
 
-**TASK-06:** Wire navigation and remaining prototype screens (History, Insights, Settings).
+**TASK-07:** End-to-end smoke run on emulator/device and presentation walkthrough.
 
 ## Update instructions for coding agents
 

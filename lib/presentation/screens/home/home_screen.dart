@@ -7,6 +7,9 @@ import 'package:habit_tracker/domain/models/habit_day_status.dart';
 import 'package:habit_tracker/presentation/theme/app_theme.dart';
 import 'package:habit_tracker/presentation/widgets/habit_card.dart';
 import 'package:habit_tracker/presentation/screens/add/add_habit_screen.dart';
+import 'package:habit_tracker/presentation/screens/history/history_screen.dart';
+import 'package:habit_tracker/presentation/screens/settings/settings_screen.dart';
+import 'package:habit_tracker/presentation/navigation/app_router.dart';
 
 /// Main Home screen displaying the date/progress header and today's habits.
 /// Corresponds to Section 48-84 of PROJECT_BRIEF.md and DESIGN.md.
@@ -119,12 +122,7 @@ class HomeScreen extends ConsumerWidget {
             clipBehavior: Clip.antiAlias,
             child: InkWell(
               onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('History screen will be accessible here.'),
-                    duration: Duration(seconds: 1),
-                  ),
-                );
+                appNavigateTo(context, AppRoutes.history, const HistoryScreen());
               },
               child: Container(
                 height: headerHeight,
@@ -171,11 +169,7 @@ class HomeScreen extends ConsumerWidget {
             clipBehavior: Clip.antiAlias,
             child: InkWell(
               onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const AddHabitScreen(),
-                  ),
-                );
+                appNavigateTo(context, AppRoutes.add, const AddHabitScreen());
               },
               child: const SizedBox(
                 height: headerHeight,
@@ -202,12 +196,7 @@ class HomeScreen extends ConsumerWidget {
             clipBehavior: Clip.antiAlias,
             child: InkWell(
               onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Settings screen will open here.'),
-                    duration: Duration(seconds: 1),
-                  ),
-                );
+                appNavigateTo(context, AppRoutes.settings, const SettingsScreen());
               },
               child: const SizedBox(
                 height: headerHeight,

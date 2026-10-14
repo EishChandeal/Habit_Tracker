@@ -10,6 +10,9 @@ import 'package:habit_tracker/domain/models/habit_day_status.dart';
 import 'package:habit_tracker/data/models/dtos/dtos.dart';
 import 'package:habit_tracker/domain/enums/enums.dart';
 
+import 'package:habit_tracker/presentation/screens/history/history_screen.dart';
+import 'package:habit_tracker/presentation/screens/insights/insights_screen.dart';
+import 'package:habit_tracker/presentation/screens/settings/settings_screen.dart';
 import 'package:habit_tracker/data/database/app_database.dart';
 import 'package:habit_tracker/application/providers/providers.dart';
 import 'package:objectbox/objectbox.dart';
@@ -407,5 +410,126 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
     await tester.pump();
     expect(find.text('DETAILS'), findsOneWidget);
+  });
+
+  testWidgets('Tapping History button on HomeScreen navigates to HistoryScreen and back',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(412 * 3, 917 * 3);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(() => tester.view.resetPhysicalSize());
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          objectBoxStoreProvider.overrideWith((ref) async => testStore),
+        ],
+        child: const HabitTrackerApp(),
+      ),
+    );
+
+    await tester.pump();
+
+    // Tap History button (which displays today's date formatted, e.g. 14 Oct)
+    final formattedDate = DateFormat('d MMM').format(DateTime.now());
+    await tester.tap(find.text(formattedDate));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
+
+    // Verify HistoryScreen is active
+    expect(find.text('History'), findsOneWidget);
+    expect(find.byTooltip('Jump to today'), findsOneWidget);
+
+    // Tap back button
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // Verify back on HomeScreen
+    expect(find.text('History'), findsNothing);
+    expect(find.text(formattedDate), findsOneWidget);
+  });
+
+  testWidgets('Tapping Settings button navigates to SettingsScreen, triggers export, and visits Insights',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(412 * 3, 917 * 3);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(() => tester.view.resetPhysicalSize());
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          objectBoxStoreProvider.overrideWith((ref) async => testStore),
+        ],
+        child: const HabitTrackerApp(),
+      ),
+    );
+
+    await tester.pump();
+
+    // Tap Settings button in header
+    await tester.tap(find.byIcon(Icons.settings_outlined));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
+
+    // Verify SettingsScreen is active
+    expect(find.text('Settings'), findsOneWidget);
+    expect(find.text('NAVIGATION SHORTCUTS'), findsOneWidget);
+    expect(find.text('DATA EXPORT'), findsOneWidget);
+
+    // Tap Export to CSV
+    await tester.tap(find.text('Export to CSV'));
+    await tester.pump();
+    expect(find.byType(SnackBar), findsWidgets);
+
+    // Tap Insights & Analytics shortcut from Settings
+    await tester.tap(find.text('Insights & Analytics'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
+
+    // Verify InsightsScreen is active
+    expect(find.widgetWithText(AppBar, 'Insights & Analytics'), findsOneWidget);
+
+    // Tap back button to return to SettingsScreen
+    await tester.tap(find.byTooltip('Back').last);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('Settings'), findsOneWidget);
+
+    // Tap back button to return to HomeScreen
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('Settings'), findsNothing);
+  });
+
+  testWidgets('Tapping Insights action in HistoryScreen navigates to InsightsScreen',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(412 * 3, 917 * 3);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(() => tester.view.resetPhysicalSize());
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          objectBoxStoreProvider.overrideWith((ref) async => testStore),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.darkTheme,
+          home: const HistoryScreen(),
+        ),
+      ),
+    );
+
+    await tester.pump();
+
+    // Tap View Insights action in HistoryScreen AppBar
+    await tester.tap(find.byTooltip('View Insights'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
+
+    // Verify InsightsScreen is pushed
+    expect(find.widgetWithText(AppBar, 'Insights & Analytics'), findsOneWidget);
   });
 }
