@@ -6,6 +6,7 @@ import 'package:habit_tracker/domain/enums/enums.dart';
 import 'package:habit_tracker/domain/models/habit_day_status.dart';
 import 'package:habit_tracker/presentation/theme/app_theme.dart';
 import 'package:habit_tracker/presentation/widgets/habit_card.dart';
+import 'package:habit_tracker/presentation/screens/add/add_habit_screen.dart';
 
 /// Main Home screen displaying the date/progress header and today's habits.
 /// Corresponds to Section 48-84 of PROJECT_BRIEF.md and DESIGN.md.
@@ -105,7 +106,7 @@ class HomeScreen extends ConsumerWidget {
         .length;
     final totalScheduled = scheduledHabits.length;
 
-    const double headerHeight = 84;
+    const double headerHeight = 88;
 
     return Row(
       children: [
@@ -127,7 +128,7 @@ class HomeScreen extends ConsumerWidget {
               },
               child: Container(
                 height: headerHeight,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -135,20 +136,22 @@ class HomeScreen extends ConsumerWidget {
                     Text(
                       formattedDate,
                       style: const TextStyle(
-                        fontSize: 20,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: AppColors.primaryText,
                         fontFamily: AppTheme.fontPrimary,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Text(
                       '$completedCount / $totalScheduled completed',
                       style: const TextStyle(
-                        fontSize: 13,
+                        fontSize: 12,
                         color: AppColors.mutedGrey,
                         fontFamily: AppTheme.fontPrimary,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
@@ -168,10 +171,9 @@ class HomeScreen extends ConsumerWidget {
             clipBehavior: Clip.antiAlias,
             child: InkWell(
               onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Add Habit screen will open here.'),
-                    duration: Duration(seconds: 1),
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const AddHabitScreen(),
                   ),
                 );
               },
