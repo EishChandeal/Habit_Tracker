@@ -1,13 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:habit_tracker/application/providers/providers.dart';
+import 'package:habit_tracker/data/models/dtos/dtos.dart';
 import 'package:habit_tracker/domain/enums/enums.dart';
 import 'package:habit_tracker/presentation/theme/app_theme.dart';
 
-/// Screen for creating a new habit (Boolean or Numeric).
+/// Screen for creating or editing a habit (Boolean or Numeric).
 /// Corresponds to Section 76-78 of PROJECT_BRIEF.md.
 class AddHabitScreen extends ConsumerStatefulWidget {
-  const AddHabitScreen({super.key});
+  final HabitDto? habitToEdit;
+  final HabitScheduleDto? scheduleToEdit;
+
+  const AddHabitScreen({
+    super.key,
+    this.habitToEdit,
+    this.scheduleToEdit,
+  });
 
   @override
   ConsumerState<AddHabitScreen> createState() => _AddHabitScreenState();
@@ -33,6 +41,37 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
   String _selectedColorHex = '#216CCF';
   String _selectedIconName = 'check';
   bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.habitToEdit != null) {
+      final h = widget.habitToEdit!;
+      _nameController.text = h.name;
+      _habitType = h.type;
+      _unitController.text = h.unit ?? '';
+      if (h.targetValue != null) {
+        final tv = h.targetValue!;
+        _targetValueController.text =
+            tv == tv.roundToDouble() ? tv.toInt().toString() : tv.toString();
+      }
+      _selectedColorHex = h.colorHex;
+      _selectedIconName = h.iconName;
+
+      if (widget.scheduleToEdit != null) {
+        final s = widget.scheduleToEdit!;
+        _scheduleType = s.scheduleType;
+        if (s.scheduledWeekdays != null) {
+          _selectedWeekdays
+            ..clear()
+            ..addAll(s.scheduledWeekdays!);
+        }
+        if (s.targetCount != null) {
+          _targetCount = s.targetCount!;
+        }
+      }
+    }
+  }
 
   final List<String> _palette = const [
     '#216CCF', // Blue (brand)
@@ -80,36 +119,78 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
           ? _unitController.text.trim()
           : null;
 
-      await repo.createHabit(
-        name: _nameController.text.trim(),
-        type: _habitType,
-        unit: unitVal,
-        targetValue: targetVal,
-        colorHex: _selectedColorHex,
-        iconName: _selectedIconName,
-        scheduleType: _scheduleType,
-        scheduledWeekdays: _scheduleType == ScheduleType.specificWeekdays
-            ? _selectedWeekdays.toList()
-            : null,
-        targetCount: _scheduleType == ScheduleType.timesPerWeek ||
-                _scheduleType == ScheduleType.timesPerMonth
-            ? _targetCount
-            : null,
-      );
-
-      // Invalidate dashboard provider so Home updates immediately
-      ref.invalidate(todayDashboardProvider);
-      ref.invalidate(habitListProvider);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Created habit "${_nameController.text.trim()}"'),
-            backgroundColor: AppColors.surface,
-            duration: const Duration(seconds: 2),
-          ),
+      if (widget.habitToEdit != null) {
+        final updatedHabit = widget.habitToEdit!.copyWith(
+          name: _nameController.text.trim(),
+          type: _habitType,
+          unit: unitVal,
+          targetValue: targetVal,
+          colorHex: _selectedColorHex,
+          iconName: _selectedIconName,
         );
-        Navigator.of(context).pop(true);
+        await repo.updateHabit(updatedHabit);
+
+        final scheduleRepo = await ref.read(habitScheduleRepositoryProvider.future);
+        await scheduleRepo.setSchedule(
+          habitId: widget.habitToEdit!.id,
+          scheduleType: _scheduleType,
+          scheduledWeekdays: _scheduleType == ScheduleType.specificWeekdays
+              ? _selectedWeekdays.toList()
+              : null,
+          targetCount: _scheduleType == ScheduleType.timesPerWeek ||
+                  _scheduleType == ScheduleType.timesPerMonth
+              ? _targetCount
+              : null,
+          effectiveFrom: DateTime.now().toUtc(),
+        );
+
+        // Invalidate dashboard and streak providers so Home and panels update
+        ref.invalidate(todayDashboardProvider);
+        ref.invalidate(habitListProvider);
+        ref.invalidate(habitStreakProvider(widget.habitToEdit!.id));
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Updated habit "${_nameController.text.trim()}"'),
+              backgroundColor: AppColors.surface,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+          Navigator.of(context).pop(true);
+        }
+      } else {
+        await repo.createHabit(
+          name: _nameController.text.trim(),
+          type: _habitType,
+          unit: unitVal,
+          targetValue: targetVal,
+          colorHex: _selectedColorHex,
+          iconName: _selectedIconName,
+          scheduleType: _scheduleType,
+          scheduledWeekdays: _scheduleType == ScheduleType.specificWeekdays
+              ? _selectedWeekdays.toList()
+              : null,
+          targetCount: _scheduleType == ScheduleType.timesPerWeek ||
+                  _scheduleType == ScheduleType.timesPerMonth
+              ? _targetCount
+              : null,
+        );
+
+        // Invalidate dashboard provider so Home updates immediately
+        ref.invalidate(todayDashboardProvider);
+        ref.invalidate(habitListProvider);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Created habit "${_nameController.text.trim()}"'),
+              backgroundColor: AppColors.surface,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+          Navigator.of(context).pop(true);
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -138,9 +219,9 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
           icon: const Icon(Icons.arrow_back, color: AppColors.primaryText),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
-          'New Habit',
-          style: TextStyle(
+        title: Text(
+          widget.habitToEdit != null ? 'Edit Habit' : 'New Habit',
+          style: const TextStyle(
             color: AppColors.primaryText,
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -316,9 +397,9 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                             color: AppColors.controlText,
                           ),
                         )
-                      : const Text(
-                          'Create Habit',
-                          style: TextStyle(
+                      : Text(
+                          widget.habitToEdit != null ? 'Save Changes' : 'Create Habit',
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                             fontFamily: AppTheme.fontPrimary,

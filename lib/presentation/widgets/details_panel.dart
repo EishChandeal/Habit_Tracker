@@ -8,11 +8,15 @@ import 'package:habit_tracker/presentation/theme/app_theme.dart';
 class DetailsPanel extends StatelessWidget {
   final HabitDto habit;
   final HabitScheduleDto? activeSchedule;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
   const DetailsPanel({
     super.key,
     required this.habit,
     this.activeSchedule,
+    this.onEdit,
+    this.onDelete,
   });
 
   @override
@@ -50,6 +54,52 @@ class DetailsPanel extends StatelessWidget {
                 ? 'Checkmark (Yes / No)'
                 : 'Numeric (${_formatVal(habit.targetValue ?? 0)} ${habit.unit ?? ''})',
           ),
+          if (onEdit != null || onDelete != null) ...[
+            const Divider(color: AppColors.surface, height: 20),
+            Row(
+              children: [
+                if (onEdit != null)
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.primaryText,
+                        side: BorderSide(
+                          color: AppColors.mutedGrey.withValues(alpha: 0.5),
+                          width: 0.8,
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      onPressed: onEdit,
+                      icon: const Icon(Icons.edit_outlined, size: 16),
+                      label: const Text('Edit', style: TextStyle(fontSize: 13)),
+                    ),
+                  ),
+                if (onEdit != null && onDelete != null) const SizedBox(width: 10),
+                if (onDelete != null)
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.redAccent,
+                        side: BorderSide(
+                          color: Colors.redAccent.withValues(alpha: 0.6),
+                          width: 0.8,
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      onPressed: onDelete,
+                      icon: const Icon(Icons.delete_outline, size: 16),
+                      label: const Text('Delete', style: TextStyle(fontSize: 13)),
+                    ),
+                  ),
+              ],
+            ),
+          ],
         ],
       ),
     );

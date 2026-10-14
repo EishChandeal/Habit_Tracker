@@ -15,16 +15,22 @@ import 'package:habit_tracker/presentation/widgets/statistics_panel.dart';
 /// - Numeric habits: Heatmap → Statistics → Graph → Details → Heatmap
 class HabitCard extends ConsumerStatefulWidget {
   final HabitDayStatus item;
+  final bool isSelected;
   final VoidCallback? onTap;
   final VoidCallback? onCompletionTap;
   final VoidCallback? onLongPress;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
   const HabitCard({
     super.key,
     required this.item,
+    this.isSelected = false,
     this.onTap,
     this.onCompletionTap,
     this.onLongPress,
+    this.onEdit,
+    this.onDelete,
   });
 
   @override
@@ -82,7 +88,12 @@ class _HabitCardState extends ConsumerState<HabitCard> {
 
     return Material(
       color: AppColors.surface,
-      borderRadius: BorderRadius.circular(16),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: widget.isSelected
+            ? const BorderSide(color: AppColors.orange, width: 2)
+            : BorderSide.none,
+      ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: _toggleExpansion,
@@ -283,6 +294,8 @@ class _HabitCardState extends ConsumerState<HabitCard> {
       return DetailsPanel(
         habit: habit,
         activeSchedule: widget.item.activeSchedule,
+        onEdit: widget.onEdit,
+        onDelete: widget.onDelete,
       );
     }
   }

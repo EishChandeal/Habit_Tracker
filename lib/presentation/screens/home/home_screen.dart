@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:habit_tracker/application/providers/providers.dart';
+import 'package:habit_tracker/data/models/dtos/dtos.dart';
 import 'package:habit_tracker/domain/enums/enums.dart';
-import 'package:habit_tracker/domain/models/habit_day_status.dart';
 import 'package:habit_tracker/presentation/theme/app_theme.dart';
 import 'package:habit_tracker/presentation/widgets/habit_card.dart';
 import 'package:habit_tracker/presentation/screens/add/add_habit_screen.dart';
@@ -13,33 +13,55 @@ import 'package:habit_tracker/presentation/navigation/app_router.dart';
 
 /// Main Home screen displaying the date/progress header and today's habits.
 /// Corresponds to Section 48-84 of PROJECT_BRIEF.md and DESIGN.md.
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  HabitDayStatus? _selectedHabitStatus;
+
+  @override
+  Widget build(BuildContext context) {
     final dashboardAsync = ref.watch(todayDashboardProvider);
+
+    final selectedStatus = _selectedHabitStatus == null
+        ? null
+        : (dashboardAsync.valueOrNull ?? [])
+            .where((h) => h.habit.id == _selectedHabitStatus!.habit.id)
+            .firstOrNull;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: Column(
-          children: [
-            // Top action & date header
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: _buildHeaderRow(context, dashboardAsync.valueOrNull ?? []),
-            ),
+        child: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () {
+            if (_selectedHabitStatus != null) {
+              setState(() => _selectedHabitStatus = null);
+            }
+          },
+          child: Column(
+            children: [
+              // Top action & date header OR selection header
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: selectedStatus != null
+                    ? _buildSelectionHeaderRow(selectedStatus)
+                    : _buildHeaderRow(context, dashboardAsync.valueOrNull ?? []),
+              ),
 
-            // Habit list / Content area
-            Expanded(
-              child: dashboardAsync.when(
-                data: (habits) {
-                  if (habits.isEmpty) {
-                    return _buildEmptyState(context);
-                  }
-                  return _buildHabitList(context, ref, habits);
-                },
+              // Habit list / Content area
+              Expanded(
+                child: dashboardAsync.when(
+                  data: (habits) {
+                    if (habits.isEmpty) {
+                      return _buildEmptyState(context);
+                    }
+                    return _buildHabitList(habits, selectedStatus);
+                  },
                 loading: () => const Center(
                   child: CircularProgressIndicator(
                     color: AppColors.blue,
@@ -91,8 +113,9 @@ class HomeScreen extends ConsumerWidget {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   /// Header row containing:
   /// 1. History / Date button (approx 171 x 88)
@@ -215,10 +238,157 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
+  /// Selection header row exposing:
+  /// 1. Close/Selected habit name (approx 171 x 88)
+  /// 2. Edit button (approx 92 x 88)
+  /// 3. Delete button (approx 92 x 88)
+  Widget _buildSelectionHeaderRow(
+    HabitDayStatus selectedItem,
+  ) {
+    const double headerHeight = 88;
+    final habit = selectedItem.habit;
+
+    return Row(
+      children: [
+        // 1. Cancel / Selected info button (flex 2)
+        Expanded(
+          flex: 2,
+          child: Material(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(16),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: () {
+                setState(() => _selectedHabitStatus = null);
+              },
+              child: Container(
+                height: headerHeight,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.close,
+                      color: AppColors.mutedGrey,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text(
+                            '1 selected',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.mutedGrey,
+                              fontFamily: AppTheme.fontPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            habit.name,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primaryText,
+                              fontFamily: AppTheme.fontPrimary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        const SizedBox(width: 12),
+
+        // 2. Edit button (flex 1)
+        Expanded(
+          flex: 1,
+          child: Material(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(16),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: () => _editHabit(selectedItem),
+              child: const SizedBox(
+                height: headerHeight,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.edit_outlined,
+                      size: 26,
+                      color: AppColors.primaryText,
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Edit',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primaryText,
+                        fontFamily: AppTheme.fontPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        const SizedBox(width: 12),
+
+        // 3. Delete button (flex 1)
+        Expanded(
+          flex: 1,
+          child: Material(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(16),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: () => _confirmDelete(habit),
+              child: const SizedBox(
+                height: headerHeight,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.delete_outline,
+                      size: 26,
+                      color: Colors.redAccent,
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Delete',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.redAccent,
+                        fontFamily: AppTheme.fontPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildHabitList(
-    BuildContext context,
-    WidgetRef ref,
     List<HabitDayStatus> habits,
+    HabitDayStatus? selectedStatus,
   ) {
     return ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -226,20 +396,126 @@ class HomeScreen extends ConsumerWidget {
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final item = habits[index];
+        final isSelected = selectedStatus?.habit.id == item.habit.id;
+
         return HabitCard(
           item: item,
+          isSelected: isSelected,
+          onTap: () {
+            if (_selectedHabitStatus != null) {
+              setState(() => _selectedHabitStatus = null);
+            }
+          },
           onCompletionTap: () => _handleCompletionTap(context, ref, item),
           onLongPress: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Selected ${item.habit.name} (Edit/Delete options)'),
-                duration: const Duration(seconds: 1),
-              ),
-            );
+            setState(() {
+              _selectedHabitStatus = item;
+            });
           },
+          onEdit: () => _editHabit(item),
+          onDelete: () => _confirmDelete(item.habit),
         );
       },
     );
+  }
+
+  Future<void> _editHabit(HabitDayStatus item) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => AddHabitScreen(
+          habitToEdit: item.habit,
+          scheduleToEdit: item.activeSchedule,
+        ),
+      ),
+    );
+    if (mounted) {
+      setState(() => _selectedHabitStatus = null);
+    }
+  }
+
+  Future<void> _confirmDelete(
+    HabitDto habit,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: AppColors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text(
+            'Delete Habit',
+            style: TextStyle(
+              color: AppColors.primaryText,
+              fontWeight: FontWeight.bold,
+              fontFamily: AppTheme.fontPrimary,
+            ),
+          ),
+          content: Text(
+            'Are you sure you want to delete "${habit.name}"? This will permanently delete all its logged entries and history.',
+            style: const TextStyle(
+              color: AppColors.mutedGrey,
+              fontFamily: AppTheme.fontPrimary,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: AppColors.mutedGrey),
+              ),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+              ),
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text(
+                'Delete',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true && mounted) {
+      try {
+        final repo = await ref.read(habitRepositoryProvider.future);
+        await repo.deleteHabit(habit.id);
+
+        ref.invalidate(todayDashboardProvider);
+        ref.invalidate(habitListProvider);
+        ref.invalidate(habitStreakProvider(habit.id));
+
+        if (mounted) {
+          setState(() {
+            if (_selectedHabitStatus?.habit.id == habit.id) {
+              _selectedHabitStatus = null;
+            }
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Deleted habit "${habit.name}"'),
+              backgroundColor: AppColors.surface,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to delete habit: $e'),
+              backgroundColor: Colors.redAccent,
+            ),
+          );
+        }
+      }
+    }
   }
 
   void _handleCompletionTap(

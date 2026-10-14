@@ -14,6 +14,7 @@ import 'package:habit_tracker/presentation/screens/history/history_screen.dart';
 import 'package:habit_tracker/presentation/screens/insights/insights_screen.dart';
 import 'package:habit_tracker/presentation/screens/settings/settings_screen.dart';
 import 'package:habit_tracker/data/database/app_database.dart';
+import 'package:habit_tracker/data/repositories/repositories.dart';
 import 'package:habit_tracker/application/providers/providers.dart';
 import 'package:objectbox/objectbox.dart';
 
@@ -531,5 +532,194 @@ void main() {
 
     // Verify InsightsScreen is pushed
     expect(find.widgetWithText(AppBar, 'Insights & Analytics'), findsOneWidget);
+  });
+
+  testWidgets('Long-press habit enters selection mode and exposes Edit/Delete in header row',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(412 * 3, 917 * 3);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(() => tester.view.resetPhysicalSize());
+
+    final repo = HabitRepository(testStore, HabitScheduleRepository(testStore));
+    await repo.createHabit(
+      name: 'Morning Meditation',
+      type: HabitType.boolean,
+      colorHex: '#216CCF',
+      iconName: 'check',
+      scheduleType: ScheduleType.daily,
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          objectBoxStoreProvider.overrideWith((ref) async => testStore),
+        ],
+        child: const HabitTrackerApp(),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Verify habit appears
+    expect(find.text('Morning Meditation'), findsOneWidget);
+
+    // Long press on habit card
+    await tester.longPress(find.text('Morning Meditation'));
+    await tester.pumpAndSettle();
+
+    // Selection mode active in top header row
+    expect(find.text('1 selected'), findsOneWidget);
+    expect(find.text('Edit'), findsOneWidget);
+    expect(find.text('Delete'), findsOneWidget);
+
+    // Tap cancel (close icon / '1 selected' card)
+    await tester.tap(find.text('1 selected'));
+    await tester.pumpAndSettle();
+
+    // Selection mode exited, normal header restored
+    expect(find.text('1 selected'), findsNothing);
+    final formattedDate = DateFormat('d MMM').format(DateTime.now());
+    expect(find.text(formattedDate), findsOneWidget);
+  });
+
+  testWidgets('Selecting habit and tapping Edit prepopulates form and persists changes',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(412 * 3, 917 * 3);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(() => tester.view.resetPhysicalSize());
+
+    final repo = HabitRepository(testStore, HabitScheduleRepository(testStore));
+    await repo.createHabit(
+      name: 'Evening Read',
+      type: HabitType.boolean,
+      colorHex: '#216CCF',
+      iconName: 'check',
+      scheduleType: ScheduleType.daily,
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          objectBoxStoreProvider.overrideWith((ref) async => testStore),
+        ],
+        child: const HabitTrackerApp(),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Long-press to select
+    await tester.longPress(find.text('Evening Read'));
+    await tester.pumpAndSettle();
+
+    // Tap Edit in the selection header
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
+
+    // Verify Edit Habit screen opened and pre-filled
+    expect(find.widgetWithText(AppBar, 'Edit Habit'), findsOneWidget);
+    expect(find.text('Evening Read'), findsWidgets);
+    expect(find.text('Save Changes'), findsOneWidget);
+
+    // Edit habit name
+    await tester.enterText(find.widgetWithText(TextFormField, 'Evening Read'), 'Evening Study');
+    await tester.pumpAndSettle();
+
+    // Tap Save Changes
+    await tester.tap(find.text('Save Changes'));
+    await tester.pumpAndSettle();
+
+    // Returned to home screen, habit name updated
+    expect(find.text('Evening Study'), findsOneWidget);
+  });
+
+  testWidgets('Selecting habit and tapping Delete shows confirmation dialog and removes habit',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(412 * 3, 917 * 3);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(() => tester.view.resetPhysicalSize());
+
+    final repo = HabitRepository(testStore, HabitScheduleRepository(testStore));
+    await repo.createHabit(
+      name: 'Temporary Habit',
+      type: HabitType.boolean,
+      colorHex: '#216CCF',
+      iconName: 'check',
+      scheduleType: ScheduleType.daily,
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          objectBoxStoreProvider.overrideWith((ref) async => testStore),
+        ],
+        child: const HabitTrackerApp(),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('Temporary Habit'), findsOneWidget);
+
+    // Long press to select
+    await tester.longPress(find.text('Temporary Habit'));
+    await tester.pumpAndSettle();
+
+    // Tap Delete in selection header
+    await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
+
+    // Verify confirmation dialog
+    expect(find.text('Delete Habit'), findsOneWidget);
+    expect(find.textContaining('Are you sure you want to delete "Temporary Habit"?'), findsOneWidget);
+
+    // Tap Delete in dialog
+    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+    await tester.pumpAndSettle();
+
+    // Habit is removed and confirmation snackbar shown
+    expect(find.text('Temporary Habit'), findsNothing);
+    expect(find.text('Deleted habit "Temporary Habit"'), findsOneWidget);
+  });
+
+  testWidgets('DetailsPanel exposes direct Edit and Delete buttons on expanded habit',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(412 * 3, 917 * 3);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(() => tester.view.resetPhysicalSize());
+
+    final repo = HabitRepository(testStore, HabitScheduleRepository(testStore));
+    await repo.createHabit(
+      name: 'Deep Breathing',
+      type: HabitType.boolean,
+      colorHex: '#216CCF',
+      iconName: 'check',
+      scheduleType: ScheduleType.daily,
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          objectBoxStoreProvider.overrideWith((ref) async => testStore),
+        ],
+        child: const HabitTrackerApp(),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Tap card to expand
+    await tester.tap(find.text('Deep Breathing'));
+    await tester.pumpAndSettle();
+
+    // Navigate panels: Heatmap -> Statistics -> Details
+    await tester.tap(find.byTooltip('Next panel'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Next panel'));
+    await tester.pumpAndSettle();
+
+    // Verify Details panel buttons
+    expect(find.widgetWithText(OutlinedButton, 'Edit'), findsOneWidget);
+    expect(find.widgetWithText(OutlinedButton, 'Delete'), findsOneWidget);
   });
 }
