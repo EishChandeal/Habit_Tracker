@@ -12,11 +12,11 @@ presentation.
 
 ## Current status
 
-- Overall: Backend ready; TASK-01 (theme & tokens), TASK-02 (Home screen & habit card), and TASK-03 (Add Habit screen for boolean & numeric habits) complete.
-- Last updated: 2026-10-14 02:40 IST
+- Overall: Backend ready; TASK-01 (theme & tokens), TASK-02 (Home screen & habit card), TASK-03 (Add Habit screen for boolean & numeric habits), and TASK-05 (expanded habit card with circular panels: Heatmap, Statistics, Trend Graph, and Details) complete.
+- Last updated: 2026-10-14 09:30 IST
 - Current branch/commit: `overman` / `d4d8578`
 - Target device/emulator: Windows desktop & Android compact frame (412×917)
-- App launches: ✅ Verified via widget testing and app compilation (`HomeScreen` and `AddHabitScreen` active)
+- App launches: ✅ Verified via widget testing and app compilation (`HomeScreen`, `AddHabitScreen`, and expanded `HabitCard` active)
 
 ## Working features
 
@@ -28,11 +28,11 @@ presentation.
 - [ ] Add one-off task (intentionally skipped per user directive; deferred to a later step)
 - [x] Checkmark completion (implemented via reactive `EntryActions.logEntry/deleteEntry` in `HomeScreen`)
 - [x] Numeric value logging (implemented via bottom sheet in `HomeScreen`)
-- [ ] Expanded habit card
-- [ ] Heatmap panel
-- [ ] Statistics panel
-- [ ] Numeric graph panel
-- [ ] Circular swipe/arrow navigation
+- [x] Expanded habit card
+- [x] Heatmap panel
+- [x] Statistics panel
+- [x] Numeric graph panel
+- [x] Circular swipe/arrow navigation
 - [ ] Edit habit
 - [ ] Delete habit with confirmation
 - [ ] History screen
@@ -45,53 +45,62 @@ presentation.
 
 ## Latest completed task
 
-**Task ID:** TASK-03 — Add Habit screen (Boolean & Numeric habits)
+**Task ID:** TASK-05 — Expanded habit card with Heatmap, Statistics, Trend Graph, and Details panels
 - Implemented:
-  - Created `lib/presentation/screens/add/add_habit_screen.dart`:
-    - Form with habit name input and validation.
-    - Tracking type selector: Checkmark (boolean) vs Numeric (number).
-    - Numeric fields: Target value and unit (only shown when Numeric is selected).
-    - Schedule selector: Daily, Specific days (weekday chips M-S), and Times per week counter.
-    - Color accent palette picker (brand blue, orange, emerald, purple, pink, amber, sky blue).
-    - Icon picker with relevant productivity and habit icons.
-    - Persistent creation using `HabitRepository.createHabit()` which saves to ObjectBox and assigns a lifetime schedule.
-    - Invalidation of `todayDashboardProvider` and `habitListProvider` upon creation for immediate reactive home updates.
-    - Skipped one-off task addition per user instruction ("skip the addition of 'one-off tasks' on this step. continue with the rest. I will deal with that later").
+  - Created `lib/presentation/widgets/heatmap_panel.dart`:
+    - Responsive streak badges (`currentStreak`, `longestStreak`).
+    - 28-day (4-week) Monday–Sunday calendar grid styled according to `DayStatus`.
+    - Distinct today-indicator (orange border), future day handling, and color legend.
+  - Created `lib/presentation/widgets/statistics_panel.dart`:
+    - 365-day range metrics computed via `habitStatisticsProvider`.
+    - Displays completion rate percentage, completed days, missed days, and habit consistency.
+    - For numeric habits: displays daily average, best record, and total logged sum with units.
+    - Responsive layout preventing RenderFlex overflows on narrow frames.
+  - Created `lib/presentation/widgets/numeric_graph_panel.dart`:
+    - 7-day trend bar graph consuming `habitEntriesProvider` for numeric habits only.
+    - Displays proportional bar heights, target goal line indicator, and weekday labels.
+  - Created `lib/presentation/widgets/details_panel.dart`:
+    - Displays habit start date (`createdAt`), schedule display name, tracking type, and numeric targets.
+    - Flexible row layout with truncation for compact viewports.
+  - Updated `lib/presentation/widgets/habit_card.dart`:
+    - Converted to `ConsumerStatefulWidget` managing in-place animated expansion via `AnimatedSize`.
+    - Circular panel carousel header with `< [PANEL NAME] >` previous/next navigation and dot indicators.
+    - Added horizontal swipe gesture navigation (`onHorizontalDragEnd`).
+    - Sequence for boolean habits: `Heatmap → Statistics → Details → Heatmap`.
+    - Sequence for numeric habits: `Heatmap → Statistics → Trend Graph → Details → Heatmap`.
+    - Design requirement: Reopening a collapsed card always resets active panel to Heatmap.
+    - Completion action button taps isolated from card expansion.
   - Updated `lib/presentation/screens/home/home_screen.dart`:
-    - Wired the orange Add button (`+`) in the header row to push `AddHabitScreen`.
-    - Adjusted header button height (88px per DESIGN.md) and padding to prevent render flex overflow across device dimensions.
+    - Removed placeholder tap snackbar so in-place expansion handles card tap cleanly.
   - Updated `test/widget_test.dart`:
-    - Added tests for navigating to `AddHabitScreen` and back to `HomeScreen`.
-    - Added tests for form validation (empty name check) and dynamic display of numeric target/unit fields.
+    - Added test for in-place card expansion, heatmap rendering, circular navigation, and reopen reset.
+    - Added test for numeric habit panel sequence including the 7-day trend graph.
+    - Configured ObjectBox store in widget test harness.
 - Files changed:
-  - `lib/presentation/screens/add/add_habit_screen.dart` (new)
+  - `lib/presentation/widgets/heatmap_panel.dart` (new)
+  - `lib/presentation/widgets/statistics_panel.dart` (new)
+  - `lib/presentation/widgets/numeric_graph_panel.dart` (new)
+  - `lib/presentation/widgets/details_panel.dart` (new)
+  - `lib/presentation/widgets/habit_card.dart` (modified)
   - `lib/presentation/screens/home/home_screen.dart` (modified)
   - `test/widget_test.dart` (modified)
 - Tests/checks run:
-  - `flutter analyze lib/` → ✅ `No issues found! (ran in 7.8s)`
-  - `flutter test` → ✅ `All tests passed! (72/72 passed)`
+  - `flutter analyze lib/` → ✅ `No issues found! (ran in 10.6s)`
+  - `flutter test` → ✅ `All tests passed! (74/74 passed)`
 - Observed result:
   - Zero analysis issues in `lib/`.
-  - All 72 tests pass across data, domain, repository, and widget suites.
+  - All 74 tests pass across data, domain, repository, and widget suites.
 - Known limitations:
   - One-off tasks omitted from Add screen as requested.
 
 ## Current task
 
-**Task ID:** TASK-05 — Expanded habit card with heatmap and statistics panels
-- Goal: Implement in-place card expansion or detailed panel sequence on habit card tap:
-  - Circular navigation controls.
-  - Heatmap grid panel based on `StreakEngine` heatmap results.
-  - Statistics panel displaying current streak, longest streak, completion rate, and best value.
-  - Numeric habit graph (if numeric).
+**Task ID:** TASK-06 — Wire navigation and remaining prototype screens
+- Goal: Wire navigation to remaining prototype screens (History, Insights, Settings placeholders/views).
 - Acceptance criteria:
-  - Tapping a card expands it in place (or opens detail panel).
-  - Shows heatmap first by default; circular sequence: Heatmap → Statistics → Details → Heatmap.
+  - Navigation controls on HomeScreen (History button in header, Settings button in header) navigate to functional or prototype stub screens.
   - `flutter analyze lib/` reports 0 issues.
-- Files likely to change:
-  - `lib/presentation/widgets/habit_card.dart`
-  - `lib/presentation/widgets/expanded_habit_panel.dart` (new)
-  - `lib/presentation/widgets/heatmap_grid.dart` (new)
+  - `flutter test` passes.
 
 ## Remaining work --- ordered by priority
 
@@ -100,7 +109,7 @@ presentation.
 - [x] TASK-01: Design tokens + app theme (`app_theme.dart`)
 - [x] TASK-02: Home screen shell + habit card widget (consumes `todayDashboardProvider`)
 - [x] TASK-03: Add Habit screen (boolean and numeric habits)
-- [ ] TASK-05: Expanded habit card — heatmap + statistics panels + circular navigation
+- [x] TASK-05: Expanded habit card — heatmap + statistics panels + circular navigation
 - [ ] TASK-06: Wire navigation (GoRouter or Navigator push to remaining screens)
 - [ ] TASK-07: End-to-end smoke run on emulator/device
 
@@ -133,6 +142,8 @@ presentation.
 
 | Date | Decision | Reason |
 |---|---|---|
+| 2026-10-14 | Reset active panel to Heatmap on card reopen | Conforms with user design specification |
+| 2026-10-14 | Omit trend graph for boolean habits | Trend graphs are only applicable to numeric tracking |
 | 2026-10-14 | Skip one-off tasks in TASK-03 | Explicit user directive ("skip the addition of 'one-off tasks' on this step") |
 | 2026-10-14 | Wire `EntryActions` directly into `HomeScreen` completion callbacks | Provides instant reactive logging feedback without waiting for TASK-04 |
 | 2026-10-14 | Configure `Montserrat` as font family with platform system fallback | Avoid network downloads and font asset bundling issues during prototype sprint |
@@ -140,7 +151,7 @@ presentation.
 
 ## Next action
 
-**TASK-05:** Implement the expanded habit interaction with heatmap grid and statistics panels.
+**TASK-06:** Wire navigation and remaining prototype screens (History, Insights, Settings).
 
 ## Update instructions for coding agents
 

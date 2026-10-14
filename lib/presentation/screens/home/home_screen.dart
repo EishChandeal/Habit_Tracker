@@ -239,14 +239,6 @@ class HomeScreen extends ConsumerWidget {
         final item = habits[index];
         return HabitCard(
           item: item,
-          onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Tapped ${item.habit.name} (Expanded panel coming)'),
-                duration: const Duration(seconds: 1),
-              ),
-            );
-          },
           onCompletionTap: () => _handleCompletionTap(context, ref, item),
           onLongPress: () {
             ScaffoldMessenger.of(context).showSnackBar(

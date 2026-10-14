@@ -10,7 +10,20 @@ import 'package:habit_tracker/domain/models/habit_day_status.dart';
 import 'package:habit_tracker/data/models/dtos/dtos.dart';
 import 'package:habit_tracker/domain/enums/enums.dart';
 
+import 'package:habit_tracker/data/database/app_database.dart';
+import 'package:habit_tracker/application/providers/providers.dart';
+import 'package:objectbox/objectbox.dart';
+
 void main() {
+  late Store testStore;
+
+  setUpAll(() async {
+    testStore = await AppDatabase.openStore();
+  });
+
+  tearDownAll(() {
+    AppDatabase.closeStore();
+  });
   testWidgets('HabitTrackerApp renders HomeScreen with dark theme and header controls',
       (WidgetTester tester) async {
     await tester.pumpWidget(
@@ -212,5 +225,187 @@ void main() {
     // Now numeric fields should be present
     expect(find.text('TARGET VALUE'), findsOneWidget);
     expect(find.text('UNIT'), findsOneWidget);
+  });
+
+  testWidgets('HabitCard expands on tap and supports circular panel sequence',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(412 * 3, 917 * 3);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(() => tester.view.resetPhysicalSize());
+
+    final habit = HabitDto(
+      id: 'test-expand-bool',
+      name: 'Read Books',
+      type: HabitType.boolean,
+      colorHex: '#216CCF',
+      iconName: 'book',
+      createdAt: DateTime.now().toUtc(),
+      isArchived: false,
+    );
+
+    final item = HabitDayStatus(
+      habit: habit,
+      entry: null,
+      isScheduledToday: true,
+      status: DayStatus.notTracked,
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          objectBoxStoreProvider.overrideWith((ref) async => testStore),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.darkTheme,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: HabitCard(item: item),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pump();
+
+    // Initially collapsed: panel title HEATMAP is not present
+    expect(find.text('HEATMAP'), findsNothing);
+
+    // Tap habit card to expand
+    await tester.tap(find.text('Read Books'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump();
+
+    // Panel title HEATMAP should now be visible
+    expect(find.text('HEATMAP'), findsOneWidget);
+    expect(find.text('Current Streak'), findsOneWidget);
+    expect(find.text('Best Streak'), findsOneWidget);
+
+    // Tap next panel button (>)
+    await tester.tap(find.byTooltip('Next panel'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump();
+
+    // Panel should switch to STATISTICS
+    expect(find.text('STATISTICS'), findsOneWidget);
+    expect(find.text('Completion Rate'), findsOneWidget);
+
+    // Tap next panel button (>)
+    await tester.tap(find.byTooltip('Next panel'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump();
+
+    // Panel should switch to DETAILS (for boolean habits: Heatmap -> Statistics -> Details)
+    expect(find.text('DETAILS'), findsOneWidget);
+    expect(find.text('Start Date'), findsOneWidget);
+
+    // Tap next panel button (>) to complete the circle back to HEATMAP
+    await tester.tap(find.byTooltip('Next panel'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump();
+
+    expect(find.text('HEATMAP'), findsOneWidget);
+
+    // Tap habit name again to collapse
+    await tester.tap(find.text('Read Books'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump();
+
+    expect(find.text('HEATMAP'), findsNothing);
+
+    // Reopen collapsed card: must reset to HEATMAP
+    await tester.tap(find.text('Read Books'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump();
+
+    expect(find.text('HEATMAP'), findsOneWidget);
+  });
+
+  testWidgets('HabitCard for numeric habit includes Trend Graph in panel sequence',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(412 * 3, 917 * 3);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(() => tester.view.resetPhysicalSize());
+
+    final habit = HabitDto(
+      id: 'test-expand-num',
+      name: 'Pushups',
+      type: HabitType.numeric,
+      unit: 'reps',
+      targetValue: 50,
+      colorHex: '#FF7A45',
+      iconName: 'fitness_center',
+      createdAt: DateTime.now().toUtc(),
+      isArchived: false,
+    );
+
+    final item = HabitDayStatus(
+      habit: habit,
+      entry: null,
+      isScheduledToday: true,
+      status: DayStatus.notTracked,
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          objectBoxStoreProvider.overrideWith((ref) async => testStore),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.darkTheme,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: HabitCard(item: item),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pump();
+
+    // Tap card to expand
+    await tester.tap(find.text('Pushups'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump();
+
+    // 0: HEATMAP
+    expect(find.text('HEATMAP'), findsOneWidget);
+
+    // 1: Next -> STATISTICS
+    await tester.tap(find.byTooltip('Next panel'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump();
+    expect(find.text('STATISTICS'), findsOneWidget);
+    expect(find.text('Daily Average'), findsOneWidget);
+
+    // 2: Next -> TREND GRAPH (numeric only)
+    await tester.tap(find.byTooltip('Next panel'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump();
+    expect(find.text('TREND GRAPH'), findsOneWidget);
+    expect(find.text('Last 7 Days'), findsOneWidget);
+
+    // 3: Next -> DETAILS
+    await tester.tap(find.byTooltip('Next panel'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump();
+    expect(find.text('DETAILS'), findsOneWidget);
   });
 }
